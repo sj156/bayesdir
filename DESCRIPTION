@@ -1,0 +1,24 @@
+Package: bayesdir
+Title: bayesdir
+Version: 0.0.0.9000
+Authors@R: 
+    person("Sheng", "Jiang", , "jiangsheng@cuhk.edu.cn", role = c("aut", "cre"))
+Description: Bayesian dynamic network models
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends: 
+    ggplot2,
+    MASS,
+    matrixNormal,
+    matrixsampling,
+    mvnfast,
+    parallel,
+    pgdraw,
+    stats,
+    tmvnsim
+Imports: 
+    magrittr
+LitrVersionUsed: 0.9.2
+LitrId: 35100f71e68bc974c0e6b70ad0b34208
