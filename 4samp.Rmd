@@ -1,0 +1,74 @@
+# Predictive Resampler 
+
+## The main sampler
+
+The main Gibbs sampler is called `run_predresamp()`. 
+
+
+
+
+```{r, send_to = 'R/gibbs-helpers.R'}
+
+#' Approximate Polya-Gamma sampler.
+#'
+#' If BayesLogit is installed, this uses BayesLogit::rpg().
+#' Otherwise, it uses a truncated infinite-sum approximation.
+#'
+#' @param n Number of samples.
+#' @param h Shape parameter.
+#' @param z Location parameter.
+#' @param trunc Truncation level for approximation. Defaults to 80.
+rpg <- function(n, h, z, trunc = 80){
+    h <- rep(h, length.out = n)
+    z <- rep(z, length.out = n)
+
+    if(requireNamespace("BayesLogit", quietly = TRUE)){
+        return(as.numeric(BayesLogit::rpg(n, h, z)))
+    }
+
+    out <- numeric(n)
+    m <- seq_len(trunc)
+
+    for(i in seq_len(n)){
+        denom <- (m - 0.5)^2 + z[i]^2 / (4 * pi^2)
+        g <- rgamma(trunc, shape = h[i], rate = 1)
+        out[i] <- sum(g / denom) / (2 * pi^2)
+    }
+
+    return(out)
+}
+
+
+```
+
+
+```{r, send_to = 'R/samp.R'}
+#' Approximate Polya-Gamma sampler.
+#'
+#' If BayesLogit is installed, this uses BayesLogit::rpg().
+#' Otherwise, it uses a truncated infinite-sum approximation.
+#'
+#' @param n Number of samples.
+#' @param h Shape parameter.
+#' @param z Location parameter.
+#' @param trunc Truncation level for approximation. Defaults to 80.
+rpg2 <- function(n, h, z, trunc = 80){
+    h <- rep(h, length.out = n)
+    z <- rep(z, length.out = n)
+
+    if(requireNamespace("BayesLogit", quietly = TRUE)){
+        return(as.numeric(BayesLogit::rpg(n, h, z)))
+    }
+
+    out <- numeric(n)
+    m <- seq_len(trunc)
+
+    for(i in seq_len(n)){
+        denom <- (m - 0.5)^2 + z[i]^2 / (4 * pi^2)
+        g <- rgamma(trunc, shape = h[i], rate = 1)
+        out[i] <- sum(g / denom) / (2 * pi^2)
+    }
+
+    return(out)
+}
+```

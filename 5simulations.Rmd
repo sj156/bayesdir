@@ -1,0 +1,29 @@
+
+# Simulation Study: Bayesian vMF models for current direction Data
+
+This vignette demonstrates a complete simulation study using `bayesdir` on synthetic traffic data from a grid road network.
+
+```{r setup, include = FALSE}
+library(bayesdir)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork)
+library(RColorBrewer)
+
+set.seed(20260509)
+```
+
+---
+
+## Sythetic data for illustration 
+
+---
+
+## Session Information
+
+```{r session-info}
+sessionInfo()
+```
+
+---
