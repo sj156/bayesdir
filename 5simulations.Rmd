@@ -10,7 +10,6 @@ library(tidyr)
 library(patchwork)
 library(RColorBrewer)
 library(circular)
-library(circglmbayes)
 
 set.seed(20260509)
 ```
@@ -26,102 +25,6 @@ set.seed(20260509)
 Used as an benchmark. See Forbes & Mardia (2015) by $\texttt{circglmbayes}$
 
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration.
-
-```{r}
-sim_bayes_vm <- function(n, n_sim = 100,
-                         mu_true = 2, kappa_true = 4,
-                         prior = list(c = 0, R0 = 0, mu0 = 0),
-                         n_iter = 10000, burn = 5000,
-                         seed = 2024) {
-  
-  
-  c   <- prior$c
-  R0  <- prior$R0
-  mu0 <- prior$mu0
-  
-  cover_mu   <- numeric(n_sim)
-  cover_kappa <- numeric(n_sim)
-  len_mu     <- numeric(n_sim)
-  len_kappa   <- numeric(n_sim)
-  mean_mu    <- numeric(n_sim)
-  mean_kappa  <- numeric(n_sim)
-  runtimes   <- numeric(n_sim)
-  
-  set.seed(seed)
-  
-  for (i in 1:n_sim) {
-    theta <- as.numeric(rvonmises(n, circular(mu_true), kappa_true))
-    
-    C_n <- R0*cos(mu0) + sum(cos(theta))
-    S_n <- R0*sin(mu0) + sum(sin(theta))
-    Rn <- sqrt(C_n^2 + S_n^2)
-    theta_bar_n <- atan2(S_n, C_n)
-    eta <- c + n        
-    
-    Rbar <- Rn / n
-    if (Rbar < 0.001) {
-      kappa_init <- 0
-    } else if (Rbar > 0.999) {
-      kappa_init <- 1 / (2 * (1 - Rbar))
-    } else {
-      solve_kappa <- function(k) besselI(k,1,expon.scaled=TRUE)/besselI(k,0,expon.scaled=TRUE)-Rbar
-      kappa_init <- uniroot(solve_kappa, c(0.001, 100))$root
-    }
-    mu_init <- theta_bar_n
-    
-    mu_sam    <- numeric(n_iter)
-    kappa_sam <- numeric(n_iter)
-    mu_sam[1]    <- mu_init
-    kappa_sam[1] <- kappa_init
-    
-    rvm_one <- function(mean_rad, kappa) {
-      as.numeric(rvonmises(1, circular(mean_rad), kappa))
-    }
-    
-    t0 <- proc.time()[3]
-    for (iter in 2:n_iter) {
-      mu_sam[iter] <- rvm_one(theta_bar_n, kappa_sam[iter-1] * Rn)
-
-      etag <- -Rn * cos(mu_sam[iter] - theta_bar_n)
-      kappa_sam[iter] <- circglmbayes:::sampleKappa(etag = etag, eta = eta)[1]
-    }
-    t1 <- proc.time()[3]
-    runtimes[i] <- t1 - t0
-    
-    mu_post   <- mu_sam[-(1:burn)]
-    kappa_post <- kappa_sam[-(1:burn)]
-    
-    ci_mu <- quantile(mu_post, c(0.025, 0.975))
-    ci_kappa <- quantile(kappa_post, c(0.025, 0.975))
-    cover_mu[i]   <- (mu_true >= ci_mu[1] & mu_true <= ci_mu[2])
-    cover_kappa[i] <- (kappa_true >= ci_kappa[1] & kappa_true <= ci_kappa[2])
-    len_mu[i]     <- ci_mu[2] - ci_mu[1]
-    len_kappa[i]   <- ci_kappa[2] - ci_kappa[1]
-    
-    mean_mu[i]   <- mean(mu_post)
-    mean_kappa[i] <- mean(kappa_post)
-  }
-  
-
-  data.frame(
-    n = n,
-    Parameter = c("mu", "kappa"),
-    Coverage  = 100 * c(mean(cover_mu), mean(cover_kappa)),
-    Length    = c(mean(len_mu), mean(len_kappa)),
-    Max_SE    = c(sd(mean_mu), sd(mean_kappa)),
-    Runtime   = mean(runtimes)   
-  )
-}
-```
-
-```{r}
-res_bayes10  <- sim_bayes_vm(n = 10, n_sim = 100)
-res_bayes30  <- sim_bayes_vm(n = 30, n_sim = 100)
-res_bayes100 <- sim_bayes_vm(n = 100, n_sim = 100)
-
-result_table <- rbind(res_bayes10, res_bayes30, res_bayes100)
-print(result_table, digits = 3)
-```
 
 ## Predictive Posterior via Martingale.
 
@@ -248,3 +151,10 @@ res_mart30 <- sim_martingale(n = 100, n_sim = 100, B = 500, M = 50)
 
 result_table <- rbind(res_mart10, res_mart30, res_mart100)
 ```
+
+```{R}
+profvis::profvis(res_mart30 <- sim_martingale(n = 30, n_sim = 100, B = 500, M = 50)
+)
+
+```
+

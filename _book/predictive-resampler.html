@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="5 Predictive Resampler | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-09">
+<meta name="date" content="2026-05-13">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -121,7 +121,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><i class="fa fa-check"></i><b>6</b> Simulation Study: Bayesian vMF models for current direction Data</a>
 <ul>
 <li class="chapter" data-level="6.1" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sythetic-data-for-illustration"><i class="fa fa-check"></i><b>6.1</b> Sythetic data for illustration</a></li>
-<li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#session-information"><i class="fa fa-check"></i><b>6.2</b> Session Information</a></li>
+<li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#bayesian-inference-on-a-conjugate-prior."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior.</a></li>
+<li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#predictive-posterior-via-martingale."><i class="fa fa-check"></i><b>6.3</b> Predictive Posterior via Martingale.</a></li>
 </ul>
 </li>
 </ul></nav>
@@ -146,7 +147,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2>
 <span class="header-section-number">5.1</span> The main sampler<a href="predictive-resampler.html#the-main-sampler" class="anchor-section" aria-label="Anchor link to header"></a>
 </h2>
-<p>The main Gibbs sampler is called <code>run_predresamp()</code>.</p>
+<p>The main sampler is called <code>run_predresamp()</code>.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="predictive-resampler.html#cb10-1" tabindex="-1"></a><span class="co">#' Approximate Polya-Gamma sampler.</span></span>
 <span id="cb10-2"><a href="predictive-resampler.html#cb10-2" tabindex="-1"></a><span class="co">#'</span></span>
 <span id="cb10-3"><a href="predictive-resampler.html#cb10-3" tabindex="-1"></a><span class="co">#' If BayesLogit is installed, this uses BayesLogit::rpg().</span></span>
@@ -203,6 +204,62 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb11-26"><a href="predictive-resampler.html#cb11-26" tabindex="-1"></a></span>
 <span id="cb11-27"><a href="predictive-resampler.html#cb11-27" tabindex="-1"></a>    <span class="fu">return</span>(out)</span>
 <span id="cb11-28"><a href="predictive-resampler.html#cb11-28" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="predictive-resampler.html#cb12-1" tabindex="-1"></a><span class="co">#' Approximate Polya-Gamma sampler.</span></span>
+<span id="cb12-2"><a href="predictive-resampler.html#cb12-2" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb12-3"><a href="predictive-resampler.html#cb12-3" tabindex="-1"></a><span class="co">#' If BayesLogit is installed, this uses BayesLogit::rpg().</span></span>
+<span id="cb12-4"><a href="predictive-resampler.html#cb12-4" tabindex="-1"></a><span class="co">#' Otherwise, it uses a truncated infinite-sum approximation.</span></span>
+<span id="cb12-5"><a href="predictive-resampler.html#cb12-5" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb12-6"><a href="predictive-resampler.html#cb12-6" tabindex="-1"></a><span class="co">#' @param n Number of samples.</span></span>
+<span id="cb12-7"><a href="predictive-resampler.html#cb12-7" tabindex="-1"></a><span class="co">#' @param h Shape parameter.</span></span>
+<span id="cb12-8"><a href="predictive-resampler.html#cb12-8" tabindex="-1"></a><span class="co">#' @param z Location parameter.</span></span>
+<span id="cb12-9"><a href="predictive-resampler.html#cb12-9" tabindex="-1"></a><span class="co">#' @param trunc Truncation level for approximation. Defaults to 80.</span></span>
+<span id="cb12-10"><a href="predictive-resampler.html#cb12-10" tabindex="-1"></a><span id="rpg3">rpg3</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(n, h, z, <span class="at">trunc =</span> <span class="dv">80</span>){</span>
+<span id="cb12-11"><a href="predictive-resampler.html#cb12-11" tabindex="-1"></a>    h <span class="ot">&lt;-</span> <span class="fu">rep</span>(h, <span class="at">length.out =</span> n)</span>
+<span id="cb12-12"><a href="predictive-resampler.html#cb12-12" tabindex="-1"></a>    z <span class="ot">&lt;-</span> <span class="fu">rep</span>(z, <span class="at">length.out =</span> n)</span>
+<span id="cb12-13"><a href="predictive-resampler.html#cb12-13" tabindex="-1"></a></span>
+<span id="cb12-14"><a href="predictive-resampler.html#cb12-14" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">requireNamespace</span>(<span class="st">"BayesLogit"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)){</span>
+<span id="cb12-15"><a href="predictive-resampler.html#cb12-15" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">as.numeric</span>(BayesLogit<span class="sc">::</span><a href="predictive-resampler.html#rpg">rpg</a>(n, h, z)))</span>
+<span id="cb12-16"><a href="predictive-resampler.html#cb12-16" tabindex="-1"></a>    }</span>
+<span id="cb12-17"><a href="predictive-resampler.html#cb12-17" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="predictive-resampler.html#cb12-18" tabindex="-1"></a>    out <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n)</span>
+<span id="cb12-19"><a href="predictive-resampler.html#cb12-19" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(trunc)</span>
+<span id="cb12-20"><a href="predictive-resampler.html#cb12-20" tabindex="-1"></a></span>
+<span id="cb12-21"><a href="predictive-resampler.html#cb12-21" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_len</span>(n)){</span>
+<span id="cb12-22"><a href="predictive-resampler.html#cb12-22" tabindex="-1"></a>        denom <span class="ot">&lt;-</span> (m <span class="sc">-</span> <span class="fl">0.5</span>)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> z[i]<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> (<span class="dv">4</span> <span class="sc">*</span> pi<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb12-23"><a href="predictive-resampler.html#cb12-23" tabindex="-1"></a>        g <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(trunc, <span class="at">shape =</span> h[i], <span class="at">rate =</span> <span class="dv">1</span>)</span>
+<span id="cb12-24"><a href="predictive-resampler.html#cb12-24" tabindex="-1"></a>        out[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(g <span class="sc">/</span> denom) <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> pi<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb12-25"><a href="predictive-resampler.html#cb12-25" tabindex="-1"></a>    }</span>
+<span id="cb12-26"><a href="predictive-resampler.html#cb12-26" tabindex="-1"></a></span>
+<span id="cb12-27"><a href="predictive-resampler.html#cb12-27" tabindex="-1"></a>    <span class="fu">return</span>(out)</span>
+<span id="cb12-28"><a href="predictive-resampler.html#cb12-28" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="predictive-resampler.html#cb13-1" tabindex="-1"></a><span class="co">#' Approximate Polya-Gamma sampler.</span></span>
+<span id="cb13-2"><a href="predictive-resampler.html#cb13-2" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb13-3"><a href="predictive-resampler.html#cb13-3" tabindex="-1"></a><span class="co">#' If BayesLogit is installed, this uses BayesLogit::rpg().</span></span>
+<span id="cb13-4"><a href="predictive-resampler.html#cb13-4" tabindex="-1"></a><span class="co">#' Otherwise, it uses a truncated infinite-sum approximation.</span></span>
+<span id="cb13-5"><a href="predictive-resampler.html#cb13-5" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb13-6"><a href="predictive-resampler.html#cb13-6" tabindex="-1"></a><span class="co">#' @param n Number of samples.</span></span>
+<span id="cb13-7"><a href="predictive-resampler.html#cb13-7" tabindex="-1"></a><span class="co">#' @param h Shape parameter.</span></span>
+<span id="cb13-8"><a href="predictive-resampler.html#cb13-8" tabindex="-1"></a><span class="co">#' @param z Location parameter.</span></span>
+<span id="cb13-9"><a href="predictive-resampler.html#cb13-9" tabindex="-1"></a><span class="co">#' @param trunc Truncation level for approximation. Defaults to 80.</span></span>
+<span id="cb13-10"><a href="predictive-resampler.html#cb13-10" tabindex="-1"></a><span id="rpg4">rpg4</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(n, h, z, <span class="at">trunc =</span> <span class="dv">80</span>){</span>
+<span id="cb13-11"><a href="predictive-resampler.html#cb13-11" tabindex="-1"></a>    h <span class="ot">&lt;-</span> <span class="fu">rep</span>(h, <span class="at">length.out =</span> n)</span>
+<span id="cb13-12"><a href="predictive-resampler.html#cb13-12" tabindex="-1"></a>    z <span class="ot">&lt;-</span> <span class="fu">rep</span>(z, <span class="at">length.out =</span> n)</span>
+<span id="cb13-13"><a href="predictive-resampler.html#cb13-13" tabindex="-1"></a></span>
+<span id="cb13-14"><a href="predictive-resampler.html#cb13-14" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">requireNamespace</span>(<span class="st">"BayesLogit"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)){</span>
+<span id="cb13-15"><a href="predictive-resampler.html#cb13-15" tabindex="-1"></a>        <span class="fu">return</span>(<span class="fu">as.numeric</span>(BayesLogit<span class="sc">::</span><a href="predictive-resampler.html#rpg">rpg</a>(n, h, z)))</span>
+<span id="cb13-16"><a href="predictive-resampler.html#cb13-16" tabindex="-1"></a>    }</span>
+<span id="cb13-17"><a href="predictive-resampler.html#cb13-17" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="predictive-resampler.html#cb13-18" tabindex="-1"></a>    out <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n)</span>
+<span id="cb13-19"><a href="predictive-resampler.html#cb13-19" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(trunc)</span>
+<span id="cb13-20"><a href="predictive-resampler.html#cb13-20" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="predictive-resampler.html#cb13-21" tabindex="-1"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_len</span>(n)){</span>
+<span id="cb13-22"><a href="predictive-resampler.html#cb13-22" tabindex="-1"></a>        denom <span class="ot">&lt;-</span> (m <span class="sc">-</span> <span class="fl">0.5</span>)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> z[i]<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> (<span class="dv">4</span> <span class="sc">*</span> pi<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb13-23"><a href="predictive-resampler.html#cb13-23" tabindex="-1"></a>        g <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(trunc, <span class="at">shape =</span> h[i], <span class="at">rate =</span> <span class="dv">1</span>)</span>
+<span id="cb13-24"><a href="predictive-resampler.html#cb13-24" tabindex="-1"></a>        out[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(g <span class="sc">/</span> denom) <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> pi<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb13-25"><a href="predictive-resampler.html#cb13-25" tabindex="-1"></a>    }</span>
+<span id="cb13-26"><a href="predictive-resampler.html#cb13-26" tabindex="-1"></a></span>
+<span id="cb13-27"><a href="predictive-resampler.html#cb13-27" tabindex="-1"></a>    <span class="fu">return</span>(out)</span>
+<span id="cb13-28"><a href="predictive-resampler.html#cb13-28" tabindex="-1"></a>}</span></code></pre></div>
 
 </div>
 </div>
@@ -255,6 +312,18 @@ gitbook.start({
 }
 });
 });
+</script><!-- dynamically load mathjax for compatibility with self-contained --><script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
 </script>
 </body>
 </html>

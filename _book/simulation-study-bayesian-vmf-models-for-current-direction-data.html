@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="6 Simulation Study: Bayesian vMF models for current direction Data | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-09">
+<meta name="date" content="2026-05-13">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -120,7 +120,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><i class="fa fa-check"></i><b>6</b> Simulation Study: Bayesian vMF models for current direction Data</a>
 <ul>
 <li class="chapter" data-level="6.1" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sythetic-data-for-illustration"><i class="fa fa-check"></i><b>6.1</b> Sythetic data for illustration</a></li>
-<li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#session-information"><i class="fa fa-check"></i><b>6.2</b> Session Information</a></li>
+<li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#bayesian-inference-on-a-conjugate-prior."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior.</a></li>
+<li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#predictive-posterior-via-martingale."><i class="fa fa-check"></i><b>6.3</b> Predictive Posterior via Martingale.</a></li>
 </ul>
 </li>
 </ul></nav>
@@ -149,12 +150,135 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </h2>
 <hr>
 </div>
-<div id="session-information" class="section level2 hasAnchor" number="6.2">
+<div id="bayesian-inference-on-a-conjugate-prior." class="section level2 hasAnchor" number="6.2">
 <h2>
-<span class="header-section-number">6.2</span> Session Information<a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#session-information" class="anchor-section" aria-label="Anchor link to header"></a>
+<span class="header-section-number">6.2</span> Bayesian Inference on a conjugate prior.<a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#bayesian-inference-on-a-conjugate-prior." class="anchor-section" aria-label="Anchor link to header"></a>
 </h2>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb12-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
-<hr>
+<p>Used as an benchmark. See Forbes &amp; Mardia (2015) by <span class="math inline">\(\texttt{circglmbayes}\)</span></p>
+<p>Here <span class="math inline">\(\mu \in [0,2\pi]\)</span> as an angle. <span class="math inline">\(\kappa \geq0\)</span> as concentration.</p>
+</div>
+<div id="predictive-posterior-via-martingale." class="section level2 hasAnchor" number="6.3">
+<h2>
+<span class="header-section-number">6.3</span> Predictive Posterior via Martingale.<a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#predictive-posterior-via-martingale." class="anchor-section" aria-label="Anchor link to header"></a>
+</h2>
+<p>Score based martingale sampling without pre-conditioner (inverse info).</p>
+<p>For efficiency, hybrid trick is adopted.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-1" tabindex="-1"></a><span id="sim_martingale">sim_martingale</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(n, <span class="at">n_sim =</span> <span class="dv">100</span>,</span>
+<span id="cb14-2"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-2" tabindex="-1"></a>                                         <span class="at">mu_true =</span> <span class="dv">2</span>, <span class="at">kappa_true =</span> <span class="dv">4</span>,</span>
+<span id="cb14-3"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-3" tabindex="-1"></a>                                         <span class="at">B =</span> <span class="dv">500</span>, <span class="at">M =</span> <span class="dv">50</span>,</span>
+<span id="cb14-4"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-4" tabindex="-1"></a>                                         <span class="at">seed =</span> <span class="dv">1234</span>) {</span>
+<span id="cb14-5"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-5" tabindex="-1"></a>  </span>
+<span id="cb14-6"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-6" tabindex="-1"></a>  <span id="A">A</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(k) <span class="fu">ifelse</span>(k <span class="sc">&lt;</span> <span class="fl">1e-6</span>, <span class="dv">0</span>,</span>
+<span id="cb14-7"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-7" tabindex="-1"></a>                          <span class="fu">besselI</span>(k, <span class="dv">1</span>, <span class="at">expon.scaled =</span> <span class="cn">TRUE</span>) <span class="sc">/</span></span>
+<span id="cb14-8"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-8" tabindex="-1"></a>                            <span class="fu">besselI</span>(k, <span class="dv">0</span>, <span class="at">expon.scaled =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb14-9"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-9" tabindex="-1"></a>  </span>
+<span id="cb14-10"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-10" tabindex="-1"></a>  <span id="score_fn">score_fn</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(eta, x) {</span>
+<span id="cb14-11"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-11" tabindex="-1"></a>    k <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>(eta<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb14-12"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-12" tabindex="-1"></a>    <span class="cf">if</span> (k <span class="sc">&lt;</span> <span class="fl">1e-6</span>) <span class="fu">return</span>(x)</span>
+<span id="cb14-13"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-13" tabindex="-1"></a>    expected <span class="ot">&lt;-</span> <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#A">A</a>(k) <span class="sc">*</span> eta <span class="sc">/</span> k</span>
+<span id="cb14-14"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-14" tabindex="-1"></a>    x <span class="sc">-</span> expected</span>
+<span id="cb14-15"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-15" tabindex="-1"></a>  }</span>
+<span id="cb14-16"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-16" tabindex="-1"></a>  </span>
+<span id="cb14-17"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-17" tabindex="-1"></a>  <span id="rvMF2">rvMF2</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(eta) {</span>
+<span id="cb14-18"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-18" tabindex="-1"></a>    k <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>(eta<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb14-19"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-19" tabindex="-1"></a>    <span class="cf">if</span> (k <span class="sc">&lt;</span> <span class="fl">1e-6</span>) {</span>
+<span id="cb14-20"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-20" tabindex="-1"></a>      angle <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">2</span><span class="sc">*</span>pi)</span>
+<span id="cb14-21"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-21" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb14-22"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-22" tabindex="-1"></a>      mu_angle <span class="ot">&lt;-</span> <span class="fu">atan2</span>(eta[<span class="dv">2</span>], eta[<span class="dv">1</span>])</span>
+<span id="cb14-23"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-23" tabindex="-1"></a>      angle <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">rvonmises</span>(<span class="dv">1</span>, <span class="fu">circular</span>(mu_angle), k))</span>
+<span id="cb14-24"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-24" tabindex="-1"></a>    }</span>
+<span id="cb14-25"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-25" tabindex="-1"></a>    <span class="fu">c</span>(<span class="fu">cos</span>(angle), <span class="fu">sin</span>(angle))</span>
+<span id="cb14-26"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-26" tabindex="-1"></a>  }</span>
+<span id="cb14-27"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-27" tabindex="-1"></a>  </span>
+<span id="cb14-28"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-28" tabindex="-1"></a>  Z_list <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb14-29"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-29" tabindex="-1"></a>  Tn_vec <span class="ot">&lt;-</span> <span class="fu">c</span>()</span>
+<span id="cb14-30"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-30" tabindex="-1"></a>  times  <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n_sim)</span>
+<span id="cb14-31"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-31" tabindex="-1"></a>  </span>
+<span id="cb14-32"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-32" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
+<span id="cb14-33"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-33" tabindex="-1"></a>  </span>
+<span id="cb14-34"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-34" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_sim) {</span>
+<span id="cb14-35"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-35" tabindex="-1"></a>    theta_data <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">rvonmises</span>(n, <span class="fu">circular</span>(mu_true), kappa_true))</span>
+<span id="cb14-36"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-36" tabindex="-1"></a>    </span>
+<span id="cb14-37"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-37" tabindex="-1"></a>    C <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">cos</span>(theta_data)); S <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">sin</span>(theta_data))</span>
+<span id="cb14-38"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-38" tabindex="-1"></a>    R <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(C<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> S<span class="sc">^</span><span class="dv">2</span>); Rbar <span class="ot">&lt;-</span> R<span class="sc">/</span>n</span>
+<span id="cb14-39"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-39" tabindex="-1"></a>    mu_hat <span class="ot">&lt;-</span> <span class="fu">atan2</span>(S, C)</span>
+<span id="cb14-40"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-40" tabindex="-1"></a>    <span class="cf">if</span> (Rbar <span class="sc">&lt;</span> <span class="fl">0.001</span>) kappa_hat <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb14-41"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-41" tabindex="-1"></a>    <span class="cf">else</span> <span class="cf">if</span> (Rbar <span class="sc">&gt;</span> <span class="fl">0.999</span>) kappa_hat <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span>(<span class="dv">2</span><span class="sc">*</span>(<span class="dv">1</span><span class="sc">-</span>Rbar))</span>
+<span id="cb14-42"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-42" tabindex="-1"></a>    <span class="cf">else</span> kappa_hat <span class="ot">&lt;-</span> <span class="fu">uniroot</span>(<span class="cf">function</span>(k) <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#A">A</a>(k) <span class="sc">-</span> Rbar, <span class="fu">c</span>(<span class="fl">0.001</span>, <span class="dv">100</span>))<span class="sc">$</span>root</span>
+<span id="cb14-43"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-43" tabindex="-1"></a>    eta0 <span class="ot">&lt;-</span> kappa_hat <span class="sc">*</span> <span class="fu">c</span>(<span class="fu">cos</span>(mu_hat), <span class="fu">sin</span>(mu_hat))</span>
+<span id="cb14-44"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-44" tabindex="-1"></a>    </span>
+<span id="cb14-45"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-45" tabindex="-1"></a>    Z_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, B, <span class="dv">2</span>)</span>
+<span id="cb14-46"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-46" tabindex="-1"></a>    T_vec <span class="ot">&lt;-</span> <span class="fu">numeric</span>(B)</span>
+<span id="cb14-47"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-47" tabindex="-1"></a>    </span>
+<span id="cb14-48"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-48" tabindex="-1"></a>    t0 <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()[<span class="dv">3</span>]</span>
+<span id="cb14-49"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-49" tabindex="-1"></a>    </span>
+<span id="cb14-50"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-50" tabindex="-1"></a>    <span class="co">#</span></span>
+<span id="cb14-51"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-51" tabindex="-1"></a>    <span class="cf">for</span> (b <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>B) {</span>
+<span id="cb14-52"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-52" tabindex="-1"></a>      eta <span class="ot">&lt;-</span> eta0</span>
+<span id="cb14-53"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-53" tabindex="-1"></a>      V_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>)   </span>
+<span id="cb14-54"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-54" tabindex="-1"></a>      </span>
+<span id="cb14-55"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-55" tabindex="-1"></a>      <span class="do">## General iteration</span></span>
+<span id="cb14-56"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-56" tabindex="-1"></a>      <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>M) {</span>
+<span id="cb14-57"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-57" tabindex="-1"></a>        x_new <span class="ot">&lt;-</span> <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#rvMF2">rvMF2</a>(eta)</span>
+<span id="cb14-58"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-58" tabindex="-1"></a>        s <span class="ot">&lt;-</span> <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#score_fn">score_fn</a>(eta, x_new)        </span>
+<span id="cb14-59"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-59" tabindex="-1"></a>        wt <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span>(t <span class="sc">+</span> n)</span>
+<span id="cb14-60"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-60" tabindex="-1"></a>        V_mat <span class="ot">&lt;-</span> V_mat <span class="sc">+</span> wt<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> (s <span class="sc">%*%</span> <span class="fu">t</span>(s))</span>
+<span id="cb14-61"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-61" tabindex="-1"></a>        eta <span class="ot">&lt;-</span> eta <span class="sc">+</span> wt <span class="sc">*</span> s              </span>
+<span id="cb14-62"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-62" tabindex="-1"></a>      }</span>
+<span id="cb14-63"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-63" tabindex="-1"></a>      </span>
+<span id="cb14-64"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-64" tabindex="-1"></a>      <span class="do">## hybird step</span></span>
+<span id="cb14-65"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-65" tabindex="-1"></a>      w_cur <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> ((<span class="dv">1</span><span class="sc">:</span>M) <span class="sc">+</span> n)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb14-66"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-66" tabindex="-1"></a>      w_rem <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> ((M<span class="sc">+</span><span class="dv">1</span>)<span class="sc">:</span>(M<span class="sc">+</span><span class="dv">10000</span>) <span class="sc">+</span> n)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb14-67"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-67" tabindex="-1"></a>      Sigma_hat <span class="ot">&lt;-</span> V_mat <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">+</span> w_rem <span class="sc">/</span> w_cur)   </span>
+<span id="cb14-68"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-68" tabindex="-1"></a>      </span>
+<span id="cb14-69"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-69" tabindex="-1"></a>      eig <span class="ot">&lt;-</span> <span class="fu">eigen</span>(Sigma_hat, <span class="at">symmetric =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb14-70"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-70" tabindex="-1"></a>      eig<span class="sc">$</span>values[eig<span class="sc">$</span>values <span class="sc">&lt;</span> <span class="dv">0</span>] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb14-71"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-71" tabindex="-1"></a>      inv_sqrt_Sigma <span class="ot">&lt;-</span> eig<span class="sc">$</span>vectors <span class="sc">%*%</span> <span class="fu">diag</span>(<span class="dv">1</span><span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">pmax</span>(eig<span class="sc">$</span>values, <span class="fl">1e-12</span>))) <span class="sc">%*%</span> <span class="fu">t</span>(eig<span class="sc">$</span>vectors)</span>
+<span id="cb14-72"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-72" tabindex="-1"></a>      </span>
+<span id="cb14-73"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-73" tabindex="-1"></a>      eps <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">2</span>)</span>
+<span id="cb14-74"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-74" tabindex="-1"></a>      eta_final <span class="ot">&lt;-</span> eta <span class="sc">+</span> eig<span class="sc">$</span>vectors <span class="sc">%*%</span> <span class="fu">diag</span>(<span class="fu">sqrt</span>(eig<span class="sc">$</span>values <span class="sc">*</span> w_rem <span class="sc">/</span> (w_cur <span class="sc">+</span> w_rem))) <span class="sc">%*%</span> eps</span>
+<span id="cb14-75"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-75" tabindex="-1"></a>      </span>
+<span id="cb14-76"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-76" tabindex="-1"></a>      <span class="do">## Calculate each stat for UQ.</span></span>
+<span id="cb14-77"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-77" tabindex="-1"></a>      delta <span class="ot">&lt;-</span> eta_final <span class="sc">-</span> eta0</span>
+<span id="cb14-78"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-78" tabindex="-1"></a>      Z_vec <span class="ot">&lt;-</span> inv_sqrt_Sigma <span class="sc">%*%</span> delta</span>
+<span id="cb14-79"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-79" tabindex="-1"></a>      Z_mat[b, ] <span class="ot">&lt;-</span> Z_vec</span>
+<span id="cb14-80"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-80" tabindex="-1"></a>      T_vec[b] <span class="ot">&lt;-</span> <span class="fu">sum</span>(Z_vec<span class="sc">^</span><span class="dv">2</span>)  <span class="co"># For rough test, no rigirous proof.</span></span>
+<span id="cb14-81"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-81" tabindex="-1"></a>    }</span>
+<span id="cb14-82"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-82" tabindex="-1"></a>    t1 <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()[<span class="dv">3</span>]</span>
+<span id="cb14-83"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-83" tabindex="-1"></a>    times[i] <span class="ot">&lt;-</span> t1 <span class="sc">-</span> t0</span>
+<span id="cb14-84"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-84" tabindex="-1"></a>    </span>
+<span id="cb14-85"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-85" tabindex="-1"></a>    Z_list[[i]] <span class="ot">&lt;-</span> Z_mat</span>
+<span id="cb14-86"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-86" tabindex="-1"></a>    Tn_vec <span class="ot">&lt;-</span> <span class="fu">c</span>(Tn_vec, T_vec)</span>
+<span id="cb14-87"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-87" tabindex="-1"></a>  }</span>
+<span id="cb14-88"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-88" tabindex="-1"></a>  </span>
+<span id="cb14-89"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-89" tabindex="-1"></a>  Z_all <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, Z_list)</span>
+<span id="cb14-90"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-90" tabindex="-1"></a>  <span class="fu">colnames</span>(Z_all) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Z1"</span>, <span class="st">"Z2"</span>)</span>
+<span id="cb14-91"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-91" tabindex="-1"></a>  </span>
+<span id="cb14-92"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-92" tabindex="-1"></a>  cover_Z1 <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(Z_all[,<span class="dv">1</span>]) <span class="sc">&lt;=</span> <span class="fu">qnorm</span>(<span class="fl">0.975</span>))</span>
+<span id="cb14-93"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-93" tabindex="-1"></a>  cover_Z2 <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(Z_all[,<span class="dv">2</span>]) <span class="sc">&lt;=</span> <span class="fu">qnorm</span>(<span class="fl">0.975</span>))</span>
+<span id="cb14-94"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-94" tabindex="-1"></a>  cover_Tn <span class="ot">&lt;-</span> <span class="fu">mean</span>(Tn_vec <span class="sc">&lt;=</span> <span class="fu">qchisq</span>(<span class="fl">0.95</span>, <span class="at">df =</span> <span class="dv">2</span>))</span>
+<span id="cb14-95"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-95" tabindex="-1"></a>  </span>
+<span id="cb14-96"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-96" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb14-97"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-97" tabindex="-1"></a>    <span class="at">Z =</span> Z_all,</span>
+<span id="cb14-98"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-98" tabindex="-1"></a>    <span class="at">Tn =</span> Tn_vec,</span>
+<span id="cb14-99"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-99" tabindex="-1"></a>    <span class="at">summary =</span> <span class="fu">data.frame</span>(</span>
+<span id="cb14-100"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-100" tabindex="-1"></a>      <span class="at">Coverage_Z1 =</span> cover_Z1,</span>
+<span id="cb14-101"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-101" tabindex="-1"></a>      <span class="at">Coverage_Z2 =</span> cover_Z2,</span>
+<span id="cb14-102"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-102" tabindex="-1"></a>      <span class="at">Coverage_Tn =</span> cover_Tn,</span>
+<span id="cb14-103"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-103" tabindex="-1"></a>      <span class="at">Mean_Time  =</span> <span class="fu">mean</span>(times),</span>
+<span id="cb14-104"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-104" tabindex="-1"></a>      <span class="at">stringsAsFactors =</span> <span class="cn">FALSE</span></span>
+<span id="cb14-105"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-105" tabindex="-1"></a>    )</span>
+<span id="cb14-106"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-106" tabindex="-1"></a>  )</span>
+<span id="cb14-107"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb14-107" tabindex="-1"></a>}</span></code></pre></div>
+<p>Note here for simplicity, I only test on with 500 chains</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb15-1" tabindex="-1"></a>res_mart10 <span class="ot">&lt;-</span> <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sim_martingale">sim_martingale</a>(<span class="at">n =</span> <span class="dv">10</span>, <span class="at">n_sim =</span> <span class="dv">100</span>, <span class="at">B =</span> <span class="dv">500</span>, <span class="at">M =</span> <span class="dv">50</span>)</span>
+<span id="cb15-2"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb15-2" tabindex="-1"></a>res_mart30 <span class="ot">&lt;-</span> <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sim_martingale">sim_martingale</a>(<span class="at">n =</span> <span class="dv">30</span>, <span class="at">n_sim =</span> <span class="dv">100</span>, <span class="at">B =</span> <span class="dv">500</span>, <span class="at">M =</span> <span class="dv">50</span>)</span>
+<span id="cb15-3"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb15-3" tabindex="-1"></a>res_mart30 <span class="ot">&lt;-</span> <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sim_martingale">sim_martingale</a>(<span class="at">n =</span> <span class="dv">100</span>, <span class="at">n_sim =</span> <span class="dv">100</span>, <span class="at">B =</span> <span class="dv">500</span>, <span class="at">M =</span> <span class="dv">50</span>)</span>
+<span id="cb15-4"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb15-4" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb15-5" tabindex="-1"></a>result_table <span class="ot">&lt;-</span> <span class="fu">rbind</span>(res_mart10, res_mart30, res_mart100)</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb16-1" tabindex="-1"></a>profvis<span class="sc">::</span><span class="fu">profvis</span>(res_mart30 <span class="ot">&lt;-</span> <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sim_martingale">sim_martingale</a>(<span class="at">n =</span> <span class="dv">30</span>, <span class="at">n_sim =</span> <span class="dv">100</span>, <span class="at">B =</span> <span class="dv">500</span>, <span class="at">M =</span> <span class="dv">50</span>)</span>
+<span id="cb16-2"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb16-2" tabindex="-1"></a>)</span></code></pre></div>
+
 </div>
 </div>
             </section>
@@ -206,6 +330,18 @@ gitbook.start({
 }
 });
 });
+</script><!-- dynamically load mathjax for compatibility with self-contained --><script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
 </script>
 </body>
 </html>
