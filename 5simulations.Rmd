@@ -10,6 +10,7 @@ library(tidyr)
 library(patchwork)
 library(RColorBrewer)
 library(circular)
+library(circglmbayes)
 
 set.seed(20260509)
 ```
@@ -26,6 +27,102 @@ Used as an benchmark. See Forbes & Mardia (2015) by $\texttt{circglmbayes}$
 
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration.
 
+```{r}
+sim_bayes_vm <- function(n, n_sim = 100,
+                         mu_true = 2, kappa_true = 4,
+                         prior = list(c = 0, R0 = 0, mu0 = 0),
+                         n_iter = 10000, burn = 5000,
+                         seed = 2024) {
+  
+  
+  c   <- prior$c
+  R0  <- prior$R0
+  mu0 <- prior$mu0
+  
+  cover_mu   <- numeric(n_sim)
+  cover_kappa <- numeric(n_sim)
+  len_mu     <- numeric(n_sim)
+  len_kappa   <- numeric(n_sim)
+  mean_mu    <- numeric(n_sim)
+  mean_kappa  <- numeric(n_sim)
+  runtimes   <- numeric(n_sim)
+  
+  set.seed(seed)
+  
+  for (i in 1:n_sim) {
+    theta <- as.numeric(rvonmises(n, circular(mu_true), kappa_true))
+    
+    C_n <- R0*cos(mu0) + sum(cos(theta))
+    S_n <- R0*sin(mu0) + sum(sin(theta))
+    Rn <- sqrt(C_n^2 + S_n^2)
+    theta_bar_n <- atan2(S_n, C_n)
+    eta <- c + n        
+    
+    Rbar <- Rn / n
+    if (Rbar < 0.001) {
+      kappa_init <- 0
+    } else if (Rbar > 0.999) {
+      kappa_init <- 1 / (2 * (1 - Rbar))
+    } else {
+      solve_kappa <- function(k) besselI(k,1,expon.scaled=TRUE)/besselI(k,0,expon.scaled=TRUE)-Rbar
+      kappa_init <- uniroot(solve_kappa, c(0.001, 100))$root
+    }
+    mu_init <- theta_bar_n
+    
+    mu_sam    <- numeric(n_iter)
+    kappa_sam <- numeric(n_iter)
+    mu_sam[1]    <- mu_init
+    kappa_sam[1] <- kappa_init
+    
+    rvm_one <- function(mean_rad, kappa) {
+      as.numeric(rvonmises(1, circular(mean_rad), kappa))
+    }
+    
+    t0 <- proc.time()[3]
+    for (iter in 2:n_iter) {
+      mu_sam[iter] <- rvm_one(theta_bar_n, kappa_sam[iter-1] * Rn)
+
+      etag <- -Rn * cos(mu_sam[iter] - theta_bar_n)
+      kappa_sam[iter] <- circglmbayes:::sampleKappa(etag = etag, eta = eta)[1]
+    }
+    t1 <- proc.time()[3]
+    runtimes[i] <- t1 - t0
+    
+    mu_post   <- mu_sam[-(1:burn)]
+    kappa_post <- kappa_sam[-(1:burn)]
+    
+    ci_mu <- quantile(mu_post, c(0.025, 0.975))
+    ci_kappa <- quantile(kappa_post, c(0.025, 0.975))
+    cover_mu[i]   <- (mu_true >= ci_mu[1] & mu_true <= ci_mu[2])
+    cover_kappa[i] <- (kappa_true >= ci_kappa[1] & kappa_true <= ci_kappa[2])
+    len_mu[i]     <- ci_mu[2] - ci_mu[1]
+    len_kappa[i]   <- ci_kappa[2] - ci_kappa[1]
+    
+    mean_mu[i]   <- mean(mu_post)
+    mean_kappa[i] <- mean(kappa_post)
+  }
+  
+
+  data.frame(
+    n = n,
+    Parameter = c("mu", "kappa"),
+    Coverage  = 100 * c(mean(cover_mu), mean(cover_kappa)),
+    Length    = c(mean(len_mu), mean(len_kappa)),
+    Max_SE    = c(sd(mean_mu), sd(mean_kappa)),
+    Runtime   = mean(runtimes)   
+  )
+}
+```
+
+```{r}
+res_bayes10  <- sim_bayes_vm(n = 10, n_sim = 100)
+res_bayes30  <- sim_bayes_vm(n = 30, n_sim = 100)
+res_bayes100 <- sim_bayes_vm(n = 100, n_sim = 100)
+
+result_table <- rbind(res_bayes10, res_bayes30, res_bayes100)
+print(result_table, digits = 3)
+```
+
 ## Predictive Posterior via Martingale.
 
 Score based martingale sampling without pre-conditioner (inverse info).
@@ -33,128 +130,136 @@ Score based martingale sampling without pre-conditioner (inverse info).
 For efficiency, hybrid trick is adopted.
 
 ```{r}
-sim_martingale <- function(n, n_sim = 100,
-                                         mu_true = 2, kappa_true = 4,
-                                         B = 500, M = 50,
-                                         seed = 1234) {
+
+# ---- Simulation study wrapper ----
+
+#' Run a simulation study for the martingale posterior (no preconditioner).
+#'
+#' @param n number of observed data points per simulated dataset
+#' @param n_sim number of simulated datasets
+#' @param mu_true true mean direction (radians), default = 2
+#' @param kappa_true true concentration parameter, default = 4
+#' @param B number of chains (posterior samples) per dataset
+#' @param nmc number of predictive resampling steps (hybrid = FALSE)
+#' @param hybrid logical; if TRUE use hybrid acceleration
+#' @param M truncation point for hybrid acceleration
+#' @param post_correct logical; if TRUE apply post‑hoc variance correction
+#' @param save_chains logical; if TRUE, return all chain details (large memory)
+#' @param seed random seed
+#' @param n_cores number of CPU cores for parallelisation (1 = serial)
+#'
+#' @return If save_chains = FALSE, a data.frame with coverage rates,
+#'   interval lengths, and mean runtime. If save_chains = TRUE, a list
+#'   containing `summary` and the raw chain objects.
+sim_martingale_study <- function(n, n_sim = 100,
+                                 mu_true = 2, kappa_true = 4,
+                                 B = 200, nmc = 500,
+                                 hybrid = FALSE, M = 20,
+                                 post_correct = FALSE,
+                                 save_chains = FALSE,
+                                 seed = 1234,
+                                 n_cores = 1) {
+  # Load required packages inside the function to avoid side effects when used in a package
+  requireNamespace("rstiefel", quietly = TRUE)
+  requireNamespace("circular", quietly = TRUE)
   
-  A <- function(k) ifelse(k < 1e-6, 0,
-                          besselI(k, 1, expon.scaled = TRUE) /
-                            besselI(k, 0, expon.scaled = TRUE))
-  
-  score_fn <- function(eta, x) {
-    k <- sqrt(sum(eta^2))
-    if (k < 1e-6) return(x)
-    expected <- A(k) * eta / k
-    x - expected
-  }
-  
-  rvMF2 <- function(eta) {
-    k <- sqrt(sum(eta^2))
-    if (k < 1e-6) {
-      angle <- runif(1, 0, 2*pi)
-    } else {
-      mu_angle <- atan2(eta[2], eta[1])
-      angle <- as.numeric(rvonmises(1, circular(mu_angle), k))
-    }
-    c(cos(angle), sin(angle))
-  }
-  
-  Z_list <- list()
-  Tn_vec <- c()
-  times  <- numeric(n_sim)
+  # ---- Storage ----
+  cover_mu <- cover_kappa <- numeric(n_sim)
+  len_mu <- len_kappa <- numeric(n_sim)
+  mean_mu_vec <- mean_kappa_vec <- numeric(n_sim)
+  times <- numeric(n_sim)
   
   set.seed(seed)
   
-  for (i in 1:n_sim) {
-    theta_data <- as.numeric(rvonmises(n, circular(mu_true), kappa_true))
-    
-    C <- sum(cos(theta_data)); S <- sum(sin(theta_data))
-    R <- sqrt(C^2 + S^2); Rbar <- R/n
-    mu_hat <- atan2(S, C)
-    if (Rbar < 0.001) kappa_hat <- 0
-    else if (Rbar > 0.999) kappa_hat <- 1/(2*(1-Rbar))
-    else kappa_hat <- uniroot(function(k) A(k) - Rbar, c(0.001, 100))$root
-    eta0 <- kappa_hat * c(cos(mu_hat), sin(mu_hat))
-    
-    Z_mat <- matrix(0, B, 2)
-    T_vec <- numeric(B)
-    
-    t0 <- proc.time()[3]
-    
-    #
-    for (b in 1:B) {
-      eta <- eta0
-      V_mat <- matrix(0, 2, 2)   
-      
-      ## General iteration
-      for (t in 1:M) {
-        x_new <- rvMF2(eta)
-        s <- score_fn(eta, x_new)        
-        wt <- 1/(t + n)
-        V_mat <- V_mat + wt^2 * (s %*% t(s))
-        eta <- eta + wt * s              
-      }
-      
-      ## hybird step
-      w_cur <- sum(1 / ((1:M) + n)^2)
-      w_rem <- sum(1 / ((M+1):(M+10000) + n)^2)
-      Sigma_hat <- V_mat * (1 + w_rem / w_cur)   
-      
-      eig <- eigen(Sigma_hat, symmetric = TRUE)
-      eig$values[eig$values < 0] <- 0
-      inv_sqrt_Sigma <- eig$vectors %*% diag(1/sqrt(pmax(eig$values, 1e-12))) %*% t(eig$vectors)
-      
-      eps <- rnorm(2)
-      eta_final <- eta + eig$vectors %*% diag(sqrt(eig$values * w_rem / (w_cur + w_rem))) %*% eps
-      
-      ## Calculate each stat for UQ.
-      delta <- eta_final - eta0
-      Z_vec <- inv_sqrt_Sigma %*% delta
-      Z_mat[b, ] <- Z_vec
-      T_vec[b] <- sum(Z_vec^2)  # For rough test, no rigirous proof.
+  # ---- Parallelisation setup (Windows and Unix) ----
+  if (n_cores > 1) {
+    if (.Platform$OS.type == "windows") {
+      cl <- parallel::makeCluster(n_cores)
+      parallel::clusterExport(cl, c("get_Ap", "score_fn", "rvMF2",
+                                    "compute_weight_sum", "run_single_martingale"))
+      on.exit(parallel::stopCluster(cl))
+      par_fun <- function(...) parallel::parLapply(cl, ...)
+    } else {
+      par_fun <- function(...) parallel::mclapply(..., mc.cores = n_cores)
     }
+  } else {
+    par_fun <- lapply
+  }
+  
+  # ---- Simulation loop ----
+  for (i in 1:n_sim) {
+    # Generate observations
+    theta_obs <- as.numeric(circular::rvonmises(n, circular::circular(mu_true), kappa_true))
+    
+    # Compute MLE as initial natural parameter c0
+    Cobs <- sum(cos(theta_obs)); Sobs <- sum(sin(theta_obs))
+    Robs <- sqrt(Cobs^2 + Sobs^2)
+    Rbar <- Robs / n
+    mu_hat <- atan2(Sobs, Cobs)
+    if (Rbar < 0.001) {
+      kappa_hat <- 0
+    } else if (Rbar > 0.999) {
+      kappa_hat <- 1 / (2 * (1 - Rbar))
+    } else {
+      kappa_hat <- uniroot(function(k) get_Ap(k, 2) - Rbar, c(0.001, 100))$root
+    }
+    c0 <- kappa_hat * c(cos(mu_hat), sin(mu_hat))
+    
+    # Run B independent chains
+    t0 <- proc.time()[3]
+    chains <- par_fun(1:B, function(b) run_single_martingale(c0 = c0, N = n, nmc = nmc,
+                                                             hybrid = hybrid, M = M,
+                                                             post_correct = post_correct, p = 2))
     t1 <- proc.time()[3]
     times[i] <- t1 - t0
     
-    Z_list[[i]] <- Z_mat
-    Tn_vec <- c(Tn_vec, T_vec)
+    # Extract samples
+    mu_sam <- sapply(chains, `[[`, "mu_final")
+    kappa_sam <- sapply(chains, `[[`, "kappa_final")
+    mean_mu_vec[i] <- mean(mu_sam)
+    mean_kappa_vec[i] <- mean(kappa_sam)
+    
+    # 95% credible intervals for mu and kappa
+    ci_mu <- quantile(mu_sam, c(0.025, 0.975))
+    cover_mu[i] <- (mu_true >= ci_mu[1]) & (mu_true <= ci_mu[2])
+    len_mu[i] <- ci_mu[2] - ci_mu[1]
+    
+    ci_kappa <- quantile(kappa_sam, c(0.025, 0.975))
+    cover_kappa[i] <- (kappa_true >= ci_kappa[1]) & (kappa_true <= ci_kappa[2])
+    len_kappa[i] <- ci_kappa[2] - ci_kappa[1]
+    
   }
   
-  Z_all <- do.call(rbind, Z_list)
-  colnames(Z_all) <- c("Z1", "Z2")
-  
-  cover_Z1 <- mean(abs(Z_all[,1]) <= qnorm(0.975))
-  cover_Z2 <- mean(abs(Z_all[,2]) <= qnorm(0.975))
-  cover_Tn <- mean(Tn_vec <= qchisq(0.95, df = 2))
-  
-  list(
-    Z = Z_all,
-    Tn = Tn_vec,
-    summary = data.frame(
-      Coverage_Z1 = cover_Z1,
-      Coverage_Z2 = cover_Z2,
-      Coverage_Tn = cover_Tn,
-      Mean_Time  = mean(times),
-      stringsAsFactors = FALSE
-    )
+  # ---- Build output table ----
+  result <- data.frame(
+    n = n,
+    Coverage_mu = mean(cover_mu) * 100,
+    Length_mu = mean(len_mu),
+    Coverage_kappa = mean(cover_kappa) * 100,
+    Length_kappa = mean(len_kappa),
+    Max_SE_mu      = sd(mean_mu_vec),
+    Max_SE_kappa   = sd(mean_kappa_vec),
+    Mean_Time = mean(times)
   )
+  
+  if (save_chains) {
+    list(summary = result, chains = chains)
+  } else {
+    result
+  }
 }
 ```
 
 Note here for simplicity, I only test on with 500 chains
 
 ```{r}
-res_mart10 <- sim_martingale(n = 10, n_sim = 100, B = 500, M = 50)
-res_mart30 <- sim_martingale(n = 30, n_sim = 100, B = 500, M = 50)
-res_mart30 <- sim_martingale(n = 100, n_sim = 100, B = 500, M = 50)
+res_mart10 <- sim_martingale_study(n=10,n_sim = 1, B = 500, nmc =50, hybrid = TRUE,
+                                   M = 50, post_correct = TRUE,n_cores = 6, save_chains = TRUE)
+res_mart30 <- sim_martingale_study(n=30,n_sim = 50, B = 500, nmc =50, hybrid = TRUE,
+                                   M = 50, post_correct = TRUE,n_cores = 6)
+res_mart100 <- sim_martingale_study(n=100,n_sim = 50, B = 500, nmc =50, hybrid = TRUE,
+                                   M = 50, post_correct = TRUE,n_cores = 6)
+
 
 result_table <- rbind(res_mart10, res_mart30, res_mart100)
 ```
-
-```{R}
-profvis::profvis(res_mart30 <- sim_martingale(n = 30, n_sim = 100, B = 500, M = 50)
-)
-
-```
-

@@ -7,55 +7,54 @@ These functions are not documented for now. (TODO: do this).
 <!-- send_to to put all helper functions into one file.. -->
 
 ```{r, send_to = 'R/all-helpers.R'}
-#' A helper function to print the progress of a simulation. Place directly at
-#' the beginning of the loop, before any computation happens.
-#' @param isim isim.
-#' @param nsim number of sim.
-#' @param type type of job you're running. Defaults to "simulation".
-#' @param lapsetime lapsed time, in seconds (by default).
-#' @param lapsetimeunit "second".
-#' @param start.time Start time, usually obtained using \code{Sys.time()}
-#' @param fill Whether or not to fill the line.
-#' @param beep Whether to beep when done.
-printprogress <- function(isim, nsim, type="simulation", lapsetime=NULL,
-                          lapsetimeunit="seconds", start.time=NULL,
-                          fill=FALSE, beep=FALSE){
 
-    ## If lapse time is present, then use it
-    if(fill) cat(fill=TRUE)
-    if(is.null(lapsetime) & is.null(start.time)){
-            cat("\r", type, " ", isim, "out of", nsim)
-    } else {
-        if(!is.null(start.time)){
-          if(isim == 1){
-            lapsetime = 0
-            remainingtime = "unknown"
-            endtime = "unknown time"
-          } else {
-            lapsetime = round(difftime(Sys.time(), start.time,
-                                       units = "secs"), 0)
-            remainingtime = round(lapsetime * (nsim - (isim - 1)) / (isim - 1), 0)
-            endtime = strftime((Sys.time() + remainingtime))
-          }
-        }
-        cat("\r", type, " ", isim, "out of", nsim, "with lapsed time",
-            lapsetime, lapsetimeunit, "and remaining time", remainingtime,
-            lapsetimeunit, "and will finish at", endtime, ".")
-        if(beep & isim==nsim){beepr::beep()}
-    }
-    if(fill) cat(fill=TRUE)
+#' Compute the function A(kappa) = I_{p/2}(kappa) / I_{p/2-1}(kappa)
+#' for the von Mises–Fisher distribution.
+#' @param kappa concentration parameter (non‑negative scalar)
+#' @param p space dimension (default = 2)
+#' @return scalar value of A(kappa)
+get_Ap <- function(kappa, p = 2) {
+  if (kappa < 1e-6) return(0)
+  besselI(kappa, p/2, expon.scaled = TRUE) /
+    besselI(kappa, p/2 - 1, expon.scaled = TRUE)
 }
 
-#' Stable computation of the log-sum-exp function.
-#'
-#' @param x Numeric vector.
-logsumexp <- function(x){
-    m <- max(x)
-    ret <- m + log(sum(exp(x - m)))
-    return(ret)
+#' Compute the score function s(eta, x) = x - E[X] for vMF.
+#' @param eta natural parameter vector (length p)
+#' @param x unit vector observation (length p)
+#' @param p space dimension (default = 2)
+#' @return score vector of length p
+score_fn <- function(eta, x, p = 2) {
+  kappa <- sqrt(sum(eta^2))
+  if (kappa < 1e-6) return(x)
+  expected <- get_Ap(kappa, p) * eta / kappa
+  x - expected
 }
 
 
+#' Draw a random unit vector from the vMF(eta) distribution on the circle. Used in simulation for comparison,
+#' Only implemented for p = 2.
+#' @param eta natural parameter vector (length 2)
+#' @return 2‑dimensional unit vector
+rvMF2 <- function(eta) {
+  k <- sqrt(sum(eta^2))
+  if (k < 1e-6) {
+    angle <- runif(1, 0, 2 * pi)
+  } else {
+    mu_angle <- atan2(eta[2], eta[1])
+    angle <- as.numeric(circular::rvonmises(1, circular::circular(mu_angle), k))
+  }
+  c(cos(angle), sin(angle))
+}
+
+#' Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.
+#' @param start starting index (t >= 1)
+#' @param end ending index
+#' @param N number of observed data points
+#' @return scalar value of the sum
+compute_weight_sum <- function(start, end, N) {
+  sum(1 / ((start:end) + N)^2)
+}
 ```
 
 

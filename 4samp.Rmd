@@ -2,140 +2,112 @@
 
 ## The main sampler
 
-The main sampler is called `run_predresamp()`. 
+The main Gibbs sampler is called `run_predresamp()`. 
 
+```{r, send_to = 'R/samp.R'}
+# ---- Main chain runner ----
 
-
-
-```{r, send_to = 'R/vMF-helpers.R'}
-
-#' Approximate Polya-Gamma sampler.
+#' Run a single martingale posterior chain (no preconditioner).
 #'
-#' If BayesLogit is installed, this uses BayesLogit::rpg().
-#' Otherwise, it uses a truncated infinite-sum approximation.
+#' The chain starts from the initial natural parameter c0 and performs
+#' predictive resampling for `nmc` steps (or only `M` steps if hybrid = TRUE,
+#' followed by a Gaussian correction).  Optional post‑hoc variance correction
+#' rescales the final sample so that its covariance agrees with the asymptotic
+#' posterior covariance of the preconditioned version.
 #'
-#' @param n Number of samples.
-#' @param h Shape parameter.
-#' @param z Location parameter.
-#' @param trunc Truncation level for approximation. Defaults to 80.
-rpg <- function(n, h, z, trunc = 80){
-    h <- rep(h, length.out = n)
-    z <- rep(z, length.out = n)
-
-    if(requireNamespace("BayesLogit", quietly = TRUE)){
-        return(as.numeric(BayesLogit::rpg(n, h, z)))
-    }
-
-    out <- numeric(n)
-    m <- seq_len(trunc)
-
-    for(i in seq_len(n)){
-        denom <- (m - 0.5)^2 + z[i]^2 / (4 * pi^2)
-        g <- rgamma(trunc, shape = h[i], rate = 1)
-        out[i] <- sum(g / denom) / (2 * pi^2)
-    }
-
-    return(out)
-}
-
-
-```
-
-
-```{r, send_to = 'R/samp-vMF.R'}
-#' Approximate Polya-Gamma sampler.
+#' @param c0 initial natural parameter vector (length p)
+#' @param N number of observed data points
+#' @param nmc number of predictive resampling steps (used when hybrid = FALSE)
+#' @param hybrid logical; if TRUE, apply hybrid acceleration with truncation at M
+#' @param M truncation point for hybrid acceleration (default = 20)
+#' @param post_correct logical; if TRUE, perform post‑hoc variance correction
+#' @param p space dimension (fixed to 2)
 #'
-#' If BayesLogit is installed, this uses BayesLogit::rpg().
-#' Otherwise, it uses a truncated infinite-sum approximation.
-#'
-#' @param n Number of samples.
-#' @param h Shape parameter.
-#' @param z Location parameter.
-#' @param trunc Truncation level for approximation. Defaults to 80.
-rpg2 <- function(n, h, z, trunc = 80){
-    h <- rep(h, length.out = n)
-    z <- rep(z, length.out = n)
+#' @return A list with components:
+#'   \item{c_final}{final natural parameter vector (after possible correction)}
+#'   \item{mu_final}{mean direction (angle in radians)}
+#'   \item{kappa_final}{concentration parameter}
+#'   
+run_single_martingale <- function(c0, N, nmc, hybrid = FALSE, M = 20,
+                                 post_correct = FALSE, p = 2) {
+  c_curr <- c0
+  V_mat <- matrix(0, p, p)          # accumulated un‑preconditioned score outer products
+  total_weight <- 0                 # sum of squared learning rates
 
-    if(requireNamespace("BayesLogit", quietly = TRUE)){
-        return(as.numeric(BayesLogit::rpg(n, h, z)))
+  x_chain <- matrix(0,p,nmc)
+  c_chain <- matrix(0,p,nmc)
+  
+  if (!hybrid) {
+    # ---- Full predictive resampling without truncation ----
+    for (t in 1:nmc) {
+      x_new <- rvMF2(c_curr)
+      s <- score_fn(c_curr, x_new, p)
+      wt <- 1 / (t + N)
+      total_weight <- total_weight + wt^2
+      V_mat <- V_mat + wt^2 * (s %*% t(s))
+      c_curr <- c_curr + wt * s
+      
+      x_chain[,t] <- x_new
+      c_chain[,t] <- c_curr
+
     }
+    Sigma_used <- V_mat
+  } else {
+    # ---- Hybrid acceleration: M steps + Gaussian correction ----
+    w_cur <- compute_weight_sum(1, M, N)
+    for (t in 1:M) {
+      x_new <- rvMF2(c_curr)
+      s <- score_fn(c_curr, x_new, p)
+      wt <- 1 / (t + N)
+      V_mat <- V_mat + wt^2 * (s %*% t(s))
+      c_curr <- c_curr + wt * s
+      x_chain[,t] <- x_new
+      c_chain[,t] <- c_curr
 
-    out <- numeric(n)
-    m <- seq_len(trunc)
 
-    for(i in seq_len(n)){
-        denom <- (m - 0.5)^2 + z[i]^2 / (4 * pi^2)
-        g <- rgamma(trunc, shape = h[i], rate = 1)
-        out[i] <- sum(g / denom) / (2 * pi^2)
     }
-
-    return(out)
-}
-```
-
-
-```{r, send_to = 'R/ML-helpers.R'}
-
-#' Approximate Polya-Gamma sampler.
-#'
-#' If BayesLogit is installed, this uses BayesLogit::rpg().
-#' Otherwise, it uses a truncated infinite-sum approximation.
-#'
-#' @param n Number of samples.
-#' @param h Shape parameter.
-#' @param z Location parameter.
-#' @param trunc Truncation level for approximation. Defaults to 80.
-rpg3 <- function(n, h, z, trunc = 80){
-    h <- rep(h, length.out = n)
-    z <- rep(z, length.out = n)
-
-    if(requireNamespace("BayesLogit", quietly = TRUE)){
-        return(as.numeric(BayesLogit::rpg(n, h, z)))
+    w_rem <- compute_weight_sum(M + 1, M + 10000, N)
+    r <- w_rem / w_cur
+    Cov_rem <- r * V_mat
+    Sigma_used <- V_mat + Cov_rem   # total covariance estimate
+    
+    # Gaussian correction
+    eig <- eigen(Cov_rem, symmetric = TRUE)
+    eig$values[eig$values < 0] <- 0
+    sqrt_Cov_rem <- eig$vectors %*% diag(sqrt(eig$values)) %*% t(eig$vectors)
+    epsilon <- rnorm(p)
+    c_curr <- c_curr + sqrt_Cov_rem %*% epsilon
+  }
+  
+  # ---- Post‑hoc variance correction (if requested) ----
+  if (post_correct) {
+    if (!hybrid) {
+      total_w <- compute_weight_sum(1, nmc, N)
+    } else {
+      total_w <- compute_weight_sum(1, M, N) + compute_weight_sum(M + 1, M + 10000, N)
     }
+    delta <- c_curr - c0
+    # Use eigendecomposition for stable inversion of the covariance matrix
+    eigS <- eigen(Sigma_used, symmetric = TRUE)
+    eigS$values[eigS$values < 1e-12] <- 0
+    inv_Sigma <- eigS$vectors %*% diag(ifelse(eigS$values > 0, 1/eigS$values, 0)) %*% t(eigS$vectors)
+    c_curr <- c0 + total_w * (inv_Sigma %*% delta)
+  }
+  
 
-    out <- numeric(n)
-    m <- seq_len(trunc)
-
-    for(i in seq_len(n)){
-        denom <- (m - 0.5)^2 + z[i]^2 / (4 * pi^2)
-        g <- rgamma(trunc, shape = h[i], rate = 1)
-        out[i] <- sum(g / denom) / (2 * pi^2)
-    }
-
-    return(out)
-}
-
-
-```
-
-
-```{r, send_to = 'R/samp-ML.R'}
-#' Approximate Polya-Gamma sampler.
-#'
-#' If BayesLogit is installed, this uses BayesLogit::rpg().
-#' Otherwise, it uses a truncated infinite-sum approximation.
-#'
-#' @param n Number of samples.
-#' @param h Shape parameter.
-#' @param z Location parameter.
-#' @param trunc Truncation level for approximation. Defaults to 80.
-rpg4 <- function(n, h, z, trunc = 80){
-    h <- rep(h, length.out = n)
-    z <- rep(z, length.out = n)
-
-    if(requireNamespace("BayesLogit", quietly = TRUE)){
-        return(as.numeric(BayesLogit::rpg(n, h, z)))
-    }
-
-    out <- numeric(n)
-    m <- seq_len(trunc)
-
-    for(i in seq_len(n)){
-        denom <- (m - 0.5)^2 + z[i]^2 / (4 * pi^2)
-        g <- rgamma(trunc, shape = h[i], rate = 1)
-        out[i] <- sum(g / denom) / (2 * pi^2)
-    }
-
-    return(out)
+  # ---- Convert to polar coordinates (mu, kappa) ----
+  kappa_final <- sqrt(sum(c_curr^2))
+  if (p == 2) {
+    mu_final <- atan2(c_curr[2], c_curr[1])
+    if (mu_final < 0) mu_final <- mu_final + 2 * pi
+  } else {
+    mu_final <- NA
+  }
+  
+  list(c_final = c_curr,
+       mu_final = mu_final,
+       kappa_final = kappa_final,
+       x_chain = x_chain,
+       c_chain = c_chain)
 }
 ```
