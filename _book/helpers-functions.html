@@ -146,52 +146,52 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>These are some helper functions that are needed for the posterior computation</p>
 <p>These functions are not documented for now. (TODO: do this).</p>
 <!-- send_to to put all helper functions into one file.. -->
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="helpers-functions.html#cb9-1" tabindex="-1"></a><span class="co">#' A helper function to print the progress of a simulation. Place directly at</span></span>
-<span id="cb9-2"><a href="helpers-functions.html#cb9-2" tabindex="-1"></a><span class="co">#' the beginning of the loop, before any computation happens.</span></span>
-<span id="cb9-3"><a href="helpers-functions.html#cb9-3" tabindex="-1"></a><span class="co">#' @param isim isim.</span></span>
-<span id="cb9-4"><a href="helpers-functions.html#cb9-4" tabindex="-1"></a><span class="co">#' @param nsim number of sim.</span></span>
-<span id="cb9-5"><a href="helpers-functions.html#cb9-5" tabindex="-1"></a><span class="co">#' @param type type of job you're running. Defaults to "simulation".</span></span>
-<span id="cb9-6"><a href="helpers-functions.html#cb9-6" tabindex="-1"></a><span class="co">#' @param lapsetime lapsed time, in seconds (by default).</span></span>
-<span id="cb9-7"><a href="helpers-functions.html#cb9-7" tabindex="-1"></a><span class="co">#' @param lapsetimeunit "second".</span></span>
-<span id="cb9-8"><a href="helpers-functions.html#cb9-8" tabindex="-1"></a><span class="co">#' @param start.time Start time, usually obtained using \code{Sys.time()}</span></span>
-<span id="cb9-9"><a href="helpers-functions.html#cb9-9" tabindex="-1"></a><span class="co">#' @param fill Whether or not to fill the line.</span></span>
-<span id="cb9-10"><a href="helpers-functions.html#cb9-10" tabindex="-1"></a><span class="co">#' @param beep Whether to beep when done.</span></span>
-<span id="cb9-11"><a href="helpers-functions.html#cb9-11" tabindex="-1"></a><span id="printprogress">printprogress</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(isim, nsim, <span class="at">type=</span><span class="st">"simulation"</span>, <span class="at">lapsetime=</span><span class="cn">NULL</span>,</span>
-<span id="cb9-12"><a href="helpers-functions.html#cb9-12" tabindex="-1"></a>                          <span class="at">lapsetimeunit=</span><span class="st">"seconds"</span>, <span class="at">start.time=</span><span class="cn">NULL</span>,</span>
-<span id="cb9-13"><a href="helpers-functions.html#cb9-13" tabindex="-1"></a>                          <span class="at">fill=</span><span class="cn">FALSE</span>, <span class="at">beep=</span><span class="cn">FALSE</span>){</span>
-<span id="cb9-14"><a href="helpers-functions.html#cb9-14" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="helpers-functions.html#cb9-15" tabindex="-1"></a>    <span class="do">## If lapse time is present, then use it</span></span>
-<span id="cb9-16"><a href="helpers-functions.html#cb9-16" tabindex="-1"></a>    <span class="cf">if</span>(fill) <span class="fu">cat</span>(<span class="at">fill=</span><span class="cn">TRUE</span>)</span>
-<span id="cb9-17"><a href="helpers-functions.html#cb9-17" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">is.null</span>(lapsetime) <span class="sc">&amp;</span> <span class="fu">is.null</span>(start.time)){</span>
-<span id="cb9-18"><a href="helpers-functions.html#cb9-18" tabindex="-1"></a>            <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\r</span><span class="st">"</span>, type, <span class="st">" "</span>, isim, <span class="st">"out of"</span>, nsim)</span>
-<span id="cb9-19"><a href="helpers-functions.html#cb9-19" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb9-20"><a href="helpers-functions.html#cb9-20" tabindex="-1"></a>        <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(start.time)){</span>
-<span id="cb9-21"><a href="helpers-functions.html#cb9-21" tabindex="-1"></a>          <span class="cf">if</span>(isim <span class="sc">==</span> <span class="dv">1</span>){</span>
-<span id="cb9-22"><a href="helpers-functions.html#cb9-22" tabindex="-1"></a>            lapsetime <span class="ot">=</span> <span class="dv">0</span></span>
-<span id="cb9-23"><a href="helpers-functions.html#cb9-23" tabindex="-1"></a>            remainingtime <span class="ot">=</span> <span class="st">"unknown"</span></span>
-<span id="cb9-24"><a href="helpers-functions.html#cb9-24" tabindex="-1"></a>            endtime <span class="ot">=</span> <span class="st">"unknown time"</span></span>
-<span id="cb9-25"><a href="helpers-functions.html#cb9-25" tabindex="-1"></a>          } <span class="cf">else</span> {</span>
-<span id="cb9-26"><a href="helpers-functions.html#cb9-26" tabindex="-1"></a>            lapsetime <span class="ot">=</span> <span class="fu">round</span>(<span class="fu">difftime</span>(<span class="fu">Sys.time</span>(), start.time,</span>
-<span id="cb9-27"><a href="helpers-functions.html#cb9-27" tabindex="-1"></a>                                       <span class="at">units =</span> <span class="st">"secs"</span>), <span class="dv">0</span>)</span>
-<span id="cb9-28"><a href="helpers-functions.html#cb9-28" tabindex="-1"></a>            remainingtime <span class="ot">=</span> <span class="fu">round</span>(lapsetime <span class="sc">*</span> (nsim <span class="sc">-</span> (isim <span class="sc">-</span> <span class="dv">1</span>)) <span class="sc">/</span> (isim <span class="sc">-</span> <span class="dv">1</span>), <span class="dv">0</span>)</span>
-<span id="cb9-29"><a href="helpers-functions.html#cb9-29" tabindex="-1"></a>            endtime <span class="ot">=</span> <span class="fu">strftime</span>((<span class="fu">Sys.time</span>() <span class="sc">+</span> remainingtime))</span>
-<span id="cb9-30"><a href="helpers-functions.html#cb9-30" tabindex="-1"></a>          }</span>
-<span id="cb9-31"><a href="helpers-functions.html#cb9-31" tabindex="-1"></a>        }</span>
-<span id="cb9-32"><a href="helpers-functions.html#cb9-32" tabindex="-1"></a>        <span class="fu">cat</span>(<span class="st">"</span><span class="sc">\r</span><span class="st">"</span>, type, <span class="st">" "</span>, isim, <span class="st">"out of"</span>, nsim, <span class="st">"with lapsed time"</span>,</span>
-<span id="cb9-33"><a href="helpers-functions.html#cb9-33" tabindex="-1"></a>            lapsetime, lapsetimeunit, <span class="st">"and remaining time"</span>, remainingtime,</span>
-<span id="cb9-34"><a href="helpers-functions.html#cb9-34" tabindex="-1"></a>            lapsetimeunit, <span class="st">"and will finish at"</span>, endtime, <span class="st">"."</span>)</span>
-<span id="cb9-35"><a href="helpers-functions.html#cb9-35" tabindex="-1"></a>        <span class="cf">if</span>(beep <span class="sc">&amp;</span> isim<span class="sc">==</span>nsim){beepr<span class="sc">::</span><span class="fu">beep</span>()}</span>
-<span id="cb9-36"><a href="helpers-functions.html#cb9-36" tabindex="-1"></a>    }</span>
-<span id="cb9-37"><a href="helpers-functions.html#cb9-37" tabindex="-1"></a>    <span class="cf">if</span>(fill) <span class="fu">cat</span>(<span class="at">fill=</span><span class="cn">TRUE</span>)</span>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="helpers-functions.html#cb9-1" tabindex="-1"></a><span class="co">#' Compute the function A(kappa) = I_{p/2}(kappa) / I_{p/2-1}(kappa)</span></span>
+<span id="cb9-2"><a href="helpers-functions.html#cb9-2" tabindex="-1"></a><span class="co">#' for the von Mises–Fisher distribution.</span></span>
+<span id="cb9-3"><a href="helpers-functions.html#cb9-3" tabindex="-1"></a><span class="co">#' @param kappa concentration parameter (non‑negative scalar)</span></span>
+<span id="cb9-4"><a href="helpers-functions.html#cb9-4" tabindex="-1"></a><span class="co">#' @param p space dimension (default = 2)</span></span>
+<span id="cb9-5"><a href="helpers-functions.html#cb9-5" tabindex="-1"></a><span class="co">#' @return scalar value of A(kappa)</span></span>
+<span id="cb9-6"><a href="helpers-functions.html#cb9-6" tabindex="-1"></a><span id="get_Ap">get_Ap</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(kappa, <span class="at">p =</span> <span class="dv">2</span>) {</span>
+<span id="cb9-7"><a href="helpers-functions.html#cb9-7" tabindex="-1"></a>  <span class="cf">if</span> (kappa <span class="sc">&lt;</span> <span class="fl">1e-6</span>) <span class="fu">return</span>(<span class="dv">0</span>)</span>
+<span id="cb9-8"><a href="helpers-functions.html#cb9-8" tabindex="-1"></a>  <span class="fu">besselI</span>(kappa, p<span class="sc">/</span><span class="dv">2</span>, <span class="at">expon.scaled =</span> <span class="cn">TRUE</span>) <span class="sc">/</span></span>
+<span id="cb9-9"><a href="helpers-functions.html#cb9-9" tabindex="-1"></a>    <span class="fu">besselI</span>(kappa, p<span class="sc">/</span><span class="dv">2</span> <span class="sc">-</span> <span class="dv">1</span>, <span class="at">expon.scaled =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-10"><a href="helpers-functions.html#cb9-10" tabindex="-1"></a>}</span>
+<span id="cb9-11"><a href="helpers-functions.html#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="helpers-functions.html#cb9-12" tabindex="-1"></a><span class="co">#' Compute the score function s(eta, x) = x - E[X] for vMF.</span></span>
+<span id="cb9-13"><a href="helpers-functions.html#cb9-13" tabindex="-1"></a><span class="co">#' @param eta natural parameter vector (length p)</span></span>
+<span id="cb9-14"><a href="helpers-functions.html#cb9-14" tabindex="-1"></a><span class="co">#' @param x unit vector observation (length p)</span></span>
+<span id="cb9-15"><a href="helpers-functions.html#cb9-15" tabindex="-1"></a><span class="co">#' @param p space dimension (default = 2)</span></span>
+<span id="cb9-16"><a href="helpers-functions.html#cb9-16" tabindex="-1"></a><span class="co">#' @return score vector of length p</span></span>
+<span id="cb9-17"><a href="helpers-functions.html#cb9-17" tabindex="-1"></a><span id="score_fn">score_fn</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(eta, x, <span class="at">p =</span> <span class="dv">2</span>) {</span>
+<span id="cb9-18"><a href="helpers-functions.html#cb9-18" tabindex="-1"></a>  kappa <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>(eta<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb9-19"><a href="helpers-functions.html#cb9-19" tabindex="-1"></a>  <span class="cf">if</span> (kappa <span class="sc">&lt;</span> <span class="fl">1e-6</span>) <span class="fu">return</span>(x)</span>
+<span id="cb9-20"><a href="helpers-functions.html#cb9-20" tabindex="-1"></a>  expected <span class="ot">&lt;-</span> <a href="helpers-functions.html#get_Ap">get_Ap</a>(kappa, p) <span class="sc">*</span> eta <span class="sc">/</span> kappa</span>
+<span id="cb9-21"><a href="helpers-functions.html#cb9-21" tabindex="-1"></a>  x <span class="sc">-</span> expected</span>
+<span id="cb9-22"><a href="helpers-functions.html#cb9-22" tabindex="-1"></a>}</span>
+<span id="cb9-23"><a href="helpers-functions.html#cb9-23" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="helpers-functions.html#cb9-24" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="helpers-functions.html#cb9-25" tabindex="-1"></a><span class="co">#' Draw a random unit vector from the vMF(eta) distribution on the circle. Used in simulation for comparison,</span></span>
+<span id="cb9-26"><a href="helpers-functions.html#cb9-26" tabindex="-1"></a><span class="co">#' Only implemented for p = 2.</span></span>
+<span id="cb9-27"><a href="helpers-functions.html#cb9-27" tabindex="-1"></a><span class="co">#' @param eta natural parameter vector (length 2)</span></span>
+<span id="cb9-28"><a href="helpers-functions.html#cb9-28" tabindex="-1"></a><span class="co">#' @return 2‑dimensional unit vector</span></span>
+<span id="cb9-29"><a href="helpers-functions.html#cb9-29" tabindex="-1"></a><span id="rvMF2">rvMF2</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(eta) {</span>
+<span id="cb9-30"><a href="helpers-functions.html#cb9-30" tabindex="-1"></a>  k <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>(eta<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb9-31"><a href="helpers-functions.html#cb9-31" tabindex="-1"></a>  <span class="cf">if</span> (k <span class="sc">&lt;</span> <span class="fl">1e-6</span>) {</span>
+<span id="cb9-32"><a href="helpers-functions.html#cb9-32" tabindex="-1"></a>    angle <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">2</span> <span class="sc">*</span> pi)</span>
+<span id="cb9-33"><a href="helpers-functions.html#cb9-33" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb9-34"><a href="helpers-functions.html#cb9-34" tabindex="-1"></a>    mu_angle <span class="ot">&lt;-</span> <span class="fu">atan2</span>(eta[<span class="dv">2</span>], eta[<span class="dv">1</span>])</span>
+<span id="cb9-35"><a href="helpers-functions.html#cb9-35" tabindex="-1"></a>    angle <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(circular<span class="sc">::</span><span class="fu">rvonmises</span>(<span class="dv">1</span>, circular<span class="sc">::</span><span class="fu">circular</span>(mu_angle), k))</span>
+<span id="cb9-36"><a href="helpers-functions.html#cb9-36" tabindex="-1"></a>  }</span>
+<span id="cb9-37"><a href="helpers-functions.html#cb9-37" tabindex="-1"></a>  <span class="fu">c</span>(<span class="fu">cos</span>(angle), <span class="fu">sin</span>(angle))</span>
 <span id="cb9-38"><a href="helpers-functions.html#cb9-38" tabindex="-1"></a>}</span>
 <span id="cb9-39"><a href="helpers-functions.html#cb9-39" tabindex="-1"></a></span>
-<span id="cb9-40"><a href="helpers-functions.html#cb9-40" tabindex="-1"></a><span class="co">#' Stable computation of the log-sum-exp function.</span></span>
-<span id="cb9-41"><a href="helpers-functions.html#cb9-41" tabindex="-1"></a><span class="co">#'</span></span>
-<span id="cb9-42"><a href="helpers-functions.html#cb9-42" tabindex="-1"></a><span class="co">#' @param x Numeric vector.</span></span>
-<span id="cb9-43"><a href="helpers-functions.html#cb9-43" tabindex="-1"></a><span id="logsumexp">logsumexp</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(x){</span>
-<span id="cb9-44"><a href="helpers-functions.html#cb9-44" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">max</span>(x)</span>
-<span id="cb9-45"><a href="helpers-functions.html#cb9-45" tabindex="-1"></a>    ret <span class="ot">&lt;-</span> m <span class="sc">+</span> <span class="fu">log</span>(<span class="fu">sum</span>(<span class="fu">exp</span>(x <span class="sc">-</span> m)))</span>
-<span id="cb9-46"><a href="helpers-functions.html#cb9-46" tabindex="-1"></a>    <span class="fu">return</span>(ret)</span>
+<span id="cb9-40"><a href="helpers-functions.html#cb9-40" tabindex="-1"></a><span class="co">#' Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.</span></span>
+<span id="cb9-41"><a href="helpers-functions.html#cb9-41" tabindex="-1"></a><span class="co">#' @param start starting index (t &gt;= 1)</span></span>
+<span id="cb9-42"><a href="helpers-functions.html#cb9-42" tabindex="-1"></a><span class="co">#' @param end ending index</span></span>
+<span id="cb9-43"><a href="helpers-functions.html#cb9-43" tabindex="-1"></a><span class="co">#' @param N number of observed data points</span></span>
+<span id="cb9-44"><a href="helpers-functions.html#cb9-44" tabindex="-1"></a><span class="co">#' @return scalar value of the sum</span></span>
+<span id="cb9-45"><a href="helpers-functions.html#cb9-45" tabindex="-1"></a><span id="compute_weight_sum">compute_weight_sum</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(start, end, N) {</span>
+<span id="cb9-46"><a href="helpers-functions.html#cb9-46" tabindex="-1"></a>  <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> ((start<span class="sc">:</span>end) <span class="sc">+</span> N)<span class="sc">^</span><span class="dv">2</span>)</span>
 <span id="cb9-47"><a href="helpers-functions.html#cb9-47" tabindex="-1"></a>}</span></code></pre></div>
 
 </div>
