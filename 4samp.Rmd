@@ -40,7 +40,7 @@ run_single_martingale <- function(c0, N, nmc, hybrid = FALSE, M = 20,
   if (!hybrid) {
     # ---- Full predictive resampling without truncation ----
     for (t in 1:nmc) {
-      x_new <- rvMF2(c_curr)
+      x_new <- rstiefel::rmf.vector(c_curr) 
       s <- score_fn(c_curr, x_new, p)
       wt <- 1 / (t + N)
       total_weight <- total_weight + wt^2
@@ -56,7 +56,7 @@ run_single_martingale <- function(c0, N, nmc, hybrid = FALSE, M = 20,
     # ---- Hybrid acceleration: M steps + Gaussian correction ----
     w_cur <- compute_weight_sum(1, M, N)
     for (t in 1:M) {
-      x_new <- rvMF2(c_curr)
+      x_new <- rstiefel::rmf.vector(c_curr)
       s <- score_fn(c_curr, x_new, p)
       wt <- 1 / (t + N)
       V_mat <- V_mat + wt^2 * (s %*% t(s))
@@ -84,7 +84,7 @@ run_single_martingale <- function(c0, N, nmc, hybrid = FALSE, M = 20,
     if (!hybrid) {
       total_w <- compute_weight_sum(1, nmc, N)
     } else {
-      total_w <- compute_weight_sum(1, M, N) + compute_weight_sum(M + 1, M + 10000, N)
+      total_w <- compute_weight_sum(1, M+10000, N) 
     }
     delta <- c_curr - c0
     # Use eigendecomposition for stable inversion of the covariance matrix
@@ -101,7 +101,7 @@ run_single_martingale <- function(c0, N, nmc, hybrid = FALSE, M = 20,
     mu_final <- atan2(c_curr[2], c_curr[1])
     if (mu_final < 0) mu_final <- mu_final + 2 * pi
   } else {
-    mu_final <- NA
+    mu_final <- (1/kappa_final)* c_curr
   }
   
   list(c_final = c_curr,

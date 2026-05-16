@@ -49,6 +49,8 @@ usethis::use_package("matrixsampling", type = "depends")
 usethis::use_package("matrixNormal", type = "depends")
 usethis::use_package("pgdraw", type = "depends")
 usethis::use_package("tmvnsim", type = "depends")
+usethis::use_package("rstiefel", type = "depends")
+
 usethis::use_pipe(export=TRUE)
 ```
 

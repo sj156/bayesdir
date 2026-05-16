@@ -9,6 +9,7 @@ library(dplyr)
 library(tidyr)
 library(patchwork)
 library(RColorBrewer)
+library(rstiefel)
 library(circular)
 library(circglmbayes)
 
@@ -49,8 +50,11 @@ sim_bayes_vm <- function(n, n_sim = 100,
   
   set.seed(seed)
   
+  
+  eta_true <- kappa_true * c(cos(mu_true), sin(mu_true))
   for (i in 1:n_sim) {
-    theta <- as.numeric(rvonmises(n, circular(mu_true), kappa_true))
+    #theta <- replicate(n, rstiefel::rmf.vector(eta_true))
+    theta <- as.numeric(circular::rvonmises(n, circular::circular(mu_true), kappa_true))
     
     C_n <- R0*cos(mu0) + sum(cos(theta))
     S_n <- R0*sin(mu0) + sum(sin(theta))
@@ -75,12 +79,12 @@ sim_bayes_vm <- function(n, n_sim = 100,
     kappa_sam[1] <- kappa_init
     
     rvm_one <- function(mean_rad, kappa) {
-      as.numeric(rvonmises(1, circular(mean_rad), kappa))
+      as.numeric(circular::rvonmises(1, circular::circular(mean_rad), kappa))
     }
     
     t0 <- proc.time()[3]
     for (iter in 2:n_iter) {
-      mu_sam[iter] <- rvm_one(theta_bar_n, kappa_sam[iter-1] * Rn)
+      mu_sam[iter] <- rvm_one(theta_bar_n, kappa_sam[iter - 1] * Rn)
 
       etag <- -Rn * cos(mu_sam[iter] - theta_bar_n)
       kappa_sam[iter] <- circglmbayes:::sampleKappa(etag = etag, eta = eta)[1]
@@ -115,9 +119,9 @@ sim_bayes_vm <- function(n, n_sim = 100,
 ```
 
 ```{r}
-res_bayes10  <- sim_bayes_vm(n = 10, n_sim = 100)
-res_bayes30  <- sim_bayes_vm(n = 30, n_sim = 100)
-res_bayes100 <- sim_bayes_vm(n = 100, n_sim = 100)
+
+res_bayes30  <- sim_bayes_vm(n = 30, n_sim = 10)
+res_bayes100 <- sim_bayes_vm(n = 100, n_sim = 10)
 
 result_table <- rbind(res_bayes10, res_bayes30, res_bayes100)
 print(result_table, digits = 3)
@@ -151,11 +155,11 @@ For efficiency, hybrid trick is adopted.
 #' @return If save_chains = FALSE, a data.frame with coverage rates,
 #'   interval lengths, and mean runtime. If save_chains = TRUE, a list
 #'   containing `summary` and the raw chain objects.
-sim_martingale_study <- function(n, n_sim = 100,
+sim_martingale_study <- function(n, n_sim = 500,
                                  mu_true = 2, kappa_true = 4,
                                  B = 200, nmc = 500,
-                                 hybrid = FALSE, M = 20,
-                                 post_correct = FALSE,
+                                 hybrid = TRUE, M = 50,
+                                 post_correct = TRUE,
                                  save_chains = FALSE,
                                  seed = 1234,
                                  n_cores = 1) {
@@ -170,6 +174,9 @@ sim_martingale_study <- function(n, n_sim = 100,
   times <- numeric(n_sim)
   
   set.seed(seed)
+  
+  
+  eta_true <- kappa_true * c(cos(mu_true), sin(mu_true))
   
   # ---- Parallelisation setup (Windows and Unix) ----
   if (n_cores > 1) {
@@ -189,13 +196,14 @@ sim_martingale_study <- function(n, n_sim = 100,
   # ---- Simulation loop ----
   for (i in 1:n_sim) {
     # Generate observations
-    theta_obs <- as.numeric(circular::rvonmises(n, circular::circular(mu_true), kappa_true))
+    theta_obs <- replicate(n, rstiefel::rmf.vector(eta_true))
     
     # Compute MLE as initial natural parameter c0
-    Cobs <- sum(cos(theta_obs)); Sobs <- sum(sin(theta_obs))
-    Robs <- sqrt(Cobs^2 + Sobs^2)
+    sum_vec <- rowSums(theta_obs)  # 2-dim vector sum
+    Robs <- sqrt(sum(sum_vec^2))
     Rbar <- Robs / n
-    mu_hat <- atan2(Sobs, Cobs)
+    mu_hat <- atan2(sum_vec[2], sum_vec[1])
+    
     if (Rbar < 0.001) {
       kappa_hat <- 0
     } else if (Rbar > 0.999) {
@@ -248,12 +256,13 @@ sim_martingale_study <- function(n, n_sim = 100,
     result
   }
 }
+
 ```
 
 Note here for simplicity, I only test on with 500 chains
 
 ```{r}
-res_mart10 <- sim_martingale_study(n=10,n_sim = 1, B = 500, nmc =50, hybrid = TRUE,
+res_mart10 <- sim_martingale_study(n=10,n_sim = 10, B = 5000, nmc =50, hybrid = TRUE,
                                    M = 50, post_correct = TRUE,n_cores = 6, save_chains = TRUE)
 res_mart30 <- sim_martingale_study(n=30,n_sim = 50, B = 500, nmc =50, hybrid = TRUE,
                                    M = 50, post_correct = TRUE,n_cores = 6)
