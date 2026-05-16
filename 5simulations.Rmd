@@ -112,7 +112,7 @@ sim_bayes_vm <- function(n, n_sim = 100,
     Parameter = c("mu", "kappa"),
     Coverage  = 100 * c(mean(cover_mu), mean(cover_kappa)),
     Length    = c(mean(len_mu), mean(len_kappa)),
-    Max_SE    = c(sd(mean_mu), sd(mean_kappa)),
+    Mean_SE    = c(sd(mean_mu), sd(mean_kappa)),
     Runtime   = mean(runtimes)   
   )
 }
@@ -245,8 +245,8 @@ sim_martingale_study <- function(n, n_sim = 500,
     Length_mu = mean(len_mu),
     Coverage_kappa = mean(cover_kappa) * 100,
     Length_kappa = mean(len_kappa),
-    Max_SE_mu      = sd(mean_mu_vec),
-    Max_SE_kappa   = sd(mean_kappa_vec),
+    Mean_SE_mu      = sd(mean_mu_vec),
+    Mean_SE_kappa   = sd(mean_kappa_vec),
     Mean_Time = mean(times)
   )
   
