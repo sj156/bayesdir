@@ -50,11 +50,10 @@ library(bayesdir)
 
 
 ```{r, eval = FALSE}
-setwd("~/repos/bayesdir/") 
+#setwd("~/repos/bayesdir/") 
 ## 1. Delete the auto-generated _main.Rmd file
 unlink("_main.Rmd")
 unlink("_bookdown_files", recursive = TRUE)
-unlink("bayesdir", recursive = TRUE)
 
 if(!dir.create("bayesdir")){
   unlink("bayesdir", recursive = TRUE)
