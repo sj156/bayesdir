@@ -4,41 +4,23 @@
 \alias{run_single_martingale}
 \title{Run a single martingale posterior chain (no preconditioner).}
 \usage{
-run_single_martingale(
-  c0,
-  N,
-  nmc,
-  hybrid = FALSE,
-  M = 20,
-  post_correct = FALSE,
-  p = 2
-)
+run_single_martingale(c0, N, M = 20, save_path = FALSE)
 }
 \arguments{
-\item{c0}{initial natural parameter vector (length p)}
+\item{c0}{initial natural parameter vector(usually use MLE)}
 
 \item{N}{number of observed data points}
 
-\item{nmc}{number of predictive resampling steps (used when hybrid = FALSE)}
-
-\item{hybrid}{logical; if TRUE, apply hybrid acceleration with truncation at M}
-
-\item{M}{truncation point for hybrid acceleration (default = 20)}
-
-\item{post_correct}{logical; if TRUE, perform post‑hoc variance correction}
-
-\item{p}{space dimension (fixed to 2)}
+\item{M}{number of iteration (default = 20)}
 }
 \value{
 A list with components:
 \item{c_final}{final natural parameter vector (after possible correction)}
-\item{mu_final}{mean direction (angle in radians)}
+\item{mu_final}{mean direction (angle in radians if p=2)}
 \item{kappa_final}{concentration parameter}
+\item{x_chain}{all new x generated}
+\item{c_chain}{all new c generated}
 }
 \description{
-The chain starts from the initial natural parameter c0 and performs
-predictive resampling for \code{nmc} steps (or only \code{M} steps if hybrid = TRUE,
-followed by a Gaussian correction).  Optional post‑hoc variance correction
-rescales the final sample so that its covariance agrees with the asymptotic
-posterior covariance of the preconditioned version.
+Run a single martingale posterior chain (no preconditioner).
 }

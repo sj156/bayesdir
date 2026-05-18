@@ -3,22 +3,19 @@ Title: bayesdir
 Version: 0.0.0.9000
 Authors@R: 
     person("Sheng", "Jiang", , "jiangsheng@cuhk.edu.cn", role = c("aut", "cre"))
-Description: Bayesian dynamic network models
+Description: Implements Bayesian directional data analysis for von
+    Mises-Fisher models and related methods.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
-Depends: 
-    ggplot2,
-    MASS,
-    matrixNormal,
-    matrixsampling,
-    mvnfast,
-    parallel,
-    pgdraw,
-    stats,
-    tmvnsim
+RoxygenNote: 8.0.0
 Imports: 
-    magrittr
-LitrVersionUsed: 0.9.2
-LitrId: f30c663a92649ef3f8cf16341a5d41f0
+    ggplot2,
+    magrittr,
+    MASS,
+    parallel,
+    rstiefel,
+    stats,
+    tidyverse
+LitrVersionUsed: 0.9.3
+LitrId: 9dd57bd4b3fde9f0feb4b5c42805a817

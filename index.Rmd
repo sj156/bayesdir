@@ -19,7 +19,7 @@ The documentation and
 package are both created using one simple command:
 
 ```{r render, eval = FALSE}
-litr::render("index.Rmd", output_format = litr::litr_gitbook())
+litr::render("index.Rmd",output_format = litr_gitbook(minimal_eval = TRUE))
 ## install.packages("./bayesdir/", repos = NULL, type="source") 
 ```
 
@@ -28,19 +28,19 @@ This line is purely for testing (to be deleted later!).
 ```{r, eval = FALSE}
 # Complete development workflow
 my_load <- function(){
-  litr::render("~/repos/bayesdir/index.Rmd",  
+  litr::render("index.Rmd",  
                output_format = litr::litr_gitbook(minimal_eval = TRUE))
-  devtools::document("~/repos/bayesdir/bayesdir")  # Update documentation
-  devtools::load_all("~/repos/bayesdir/bayesdir")
+  devtools::document("./bayesdir")  # Update documentation
+  devtools::load_all("./bayesdir")
 }
 
 my_load()
 
 # Step 2: Check the package (optional but recommended)
-devtools::check("~/repos/bayesdir/bayesdir", document = FALSE)
+devtools::check("./bayesdir", document = FALSE)
 
 # Step 3: Install the package locally for full installation
-devtools::install("~/repos/bayesdir/bayesdir")
+devtools::install("./bayesdir")
 
 # Step 4: Load the installed package (optional, if you want to test installation)
 library(bayesdir)

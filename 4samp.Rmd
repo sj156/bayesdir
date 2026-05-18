@@ -2,112 +2,136 @@
 
 ## The main sampler
 
-The main Gibbs sampler is called `run_predresamp()`. 
+The main Gibbs sampler is called `run_predresamp_vmf()`. 
 
 ```{r, send_to = 'R/samp.R'}
-# ---- Main chain runner ----
-
 #' Run a single martingale posterior chain (no preconditioner).
-#'
-#' The chain starts from the initial natural parameter c0 and performs
-#' predictive resampling for `nmc` steps (or only `M` steps if hybrid = TRUE,
-#' followed by a Gaussian correction).  Optional post‑hoc variance correction
-#' rescales the final sample so that its covariance agrees with the asymptotic
-#' posterior covariance of the preconditioned version.
-#'
-#' @param c0 initial natural parameter vector (length p)
+#' @param c0 initial natural parameter vector(usually use MLE)
 #' @param N number of observed data points
-#' @param nmc number of predictive resampling steps (used when hybrid = FALSE)
-#' @param hybrid logical; if TRUE, apply hybrid acceleration with truncation at M
-#' @param M truncation point for hybrid acceleration (default = 20)
-#' @param post_correct logical; if TRUE, perform post‑hoc variance correction
-#' @param p space dimension (fixed to 2)
-#'
+#' @param M number of iteration (default = 20)
 #' @return A list with components:
 #'   \item{c_final}{final natural parameter vector (after possible correction)}
-#'   \item{mu_final}{mean direction (angle in radians)}
+#'   \item{mu_final}{mean direction (angle in radians if p=2)}
 #'   \item{kappa_final}{concentration parameter}
-#'   
-run_single_martingale <- function(c0, N, nmc, hybrid = FALSE, M = 20,
-                                 post_correct = FALSE, p = 2) {
+#'   \item{x_chain}{all new x generated}
+#'   \item{c_chain}{all new c generated}
+#'@export
+run_single_martingale <- function(c0, N, M = 20,save_path = FALSE) {
+                                  
+  p <- length(c0)
   c_curr <- c0
   V_mat <- matrix(0, p, p)          # accumulated un‑preconditioned score outer products
-  total_weight <- 0                 # sum of squared learning rates
-
-  x_chain <- matrix(0,p,nmc)
-  c_chain <- matrix(0,p,nmc)
   
-  if (!hybrid) {
-    # ---- Full predictive resampling without truncation ----
-    for (t in 1:nmc) {
-      x_new <- rstiefel::rmf.vector(c_curr) 
-      s <- score_fn(c_curr, x_new, p)
-      wt <- 1 / (t + N)
-      total_weight <- total_weight + wt^2
-      V_mat <- V_mat + wt^2 * (s %*% t(s))
-      c_curr <- c_curr + wt * s
-      
-      x_chain[,t] <- x_new
-      c_chain[,t] <- c_curr
 
-    }
-    Sigma_used <- V_mat
-  } else {
-    # ---- Hybrid acceleration: M steps + Gaussian correction ----
-    w_cur <- compute_weight_sum(1, M, N)
-    for (t in 1:M) {
+  if (save_path) {
+    x_chain <- matrix(0, p, M)
+    c_chain <- matrix(0, p, M)
+  }
+  
+  w_cur <- compute_weight_sum(1, M, N)       
+  w_rem <- compute_weight_sum(M + 1, M + 10000, N)  
+  total_w <- w_cur + w_rem
+  
+ # ---- Hybrid acceleration: M steps + Gaussian correction ----
+  w_cur <- compute_weight_sum(1, M, N)
+  for (t in 1:M) {
       x_new <- rstiefel::rmf.vector(c_curr)
       s <- score_fn(c_curr, x_new, p)
       wt <- 1 / (t + N)
-      V_mat <- V_mat + wt^2 * (s %*% t(s))
+      V_mat <- V_mat + wt^2 * tcrossprod(s)
       c_curr <- c_curr + wt * s
-      x_chain[,t] <- x_new
-      c_chain[,t] <- c_curr
-
-
+      
+      if (save_path) {
+      x_chain[, t] <- x_new
+      c_chain[, t] <- c_curr
     }
-    w_rem <- compute_weight_sum(M + 1, M + 10000, N)
-    r <- w_rem / w_cur
-    Cov_rem <- r * V_mat
-    Sigma_used <- V_mat + Cov_rem   # total covariance estimate
+      
+  }
+  
+
+  r <- w_rem / w_cur
+  Cov_rem <- r * V_mat
+  Sigma_used <- V_mat + Cov_rem   # total covariance estimate
+  
+  # Gaussian correction
+  eig <- eigen(Cov_rem, symmetric = TRUE)
+  eig$values[eig$values < 0] <- 0
+  sqrt_Cov_rem <- eig$vectors %*% diag(sqrt(eig$values)) %*% t(eig$vectors)
+  epsilon <- rnorm(p)
+  c_curr <- c_curr + sqrt_Cov_rem %*% epsilon
     
-    # Gaussian correction
-    eig <- eigen(Cov_rem, symmetric = TRUE)
-    eig$values[eig$values < 0] <- 0
-    sqrt_Cov_rem <- eig$vectors %*% diag(sqrt(eig$values)) %*% t(eig$vectors)
-    epsilon <- rnorm(p)
-    c_curr <- c_curr + sqrt_Cov_rem %*% epsilon
-  }
+    
+    
   
-  # ---- Post‑hoc variance correction (if requested) ----
-  if (post_correct) {
-    if (!hybrid) {
-      total_w <- compute_weight_sum(1, nmc, N)
-    } else {
-      total_w <- compute_weight_sum(1, M+10000, N) 
-    }
-    delta <- c_curr - c0
-    # Use eigendecomposition for stable inversion of the covariance matrix
-    eigS <- eigen(Sigma_used, symmetric = TRUE)
-    eigS$values[eigS$values < 1e-12] <- 0
-    inv_Sigma <- eigS$vectors %*% diag(ifelse(eigS$values > 0, 1/eigS$values, 0)) %*% t(eigS$vectors)
-    c_curr <- c0 + total_w * (inv_Sigma %*% delta)
-  }
+  # ---- Post‑hoc variance correction ----
+  delta <- c_curr - c0
   
+  # Use eigendecomposition for stable inversion of the covariance matrix
+  eigS <- eigen(Sigma_used, symmetric = TRUE)
+  eigS$values[eigS$values < 1e-12] <- 0
+  inv_Sigma <- eigS$vectors %*% diag(ifelse(eigS$values > 0, 1/eigS$values, 0)) %*% t(eigS$vectors)
+  c_curr <- c0 + total_w * (inv_Sigma %*% delta)
 
-  # ---- Convert to polar coordinates (mu, kappa) ----
+  # ---- Convert to polar coordinates (mu, kappa) for p=2----
   kappa_final <- sqrt(sum(c_curr^2))
   if (p == 2) {
     mu_final <- atan2(c_curr[2], c_curr[1])
     if (mu_final < 0) mu_final <- mu_final + 2 * pi
   } else {
-    mu_final <- (1/kappa_final)* c_curr
+    mu_final <-(1/kappa_final) * c_curr
   }
   
-  list(c_final = c_curr,
-       mu_final = mu_final,
-       kappa_final = kappa_final,
-       x_chain = x_chain,
-       c_chain = c_chain)
+  res <- list(
+    c_final     = c_curr,
+    mu_final    = mu_final,
+    kappa_final = kappa_final
+  )
+  if (save_path) {
+    res$x_chain <- x_chain
+    res$c_chain <- c_chain
+  }
+  
+  res
 }
 ```
+
+
+
+```{r,send_to = 'R/samp.R'}
+#' run B chains for empirical density
+#' @param X data dim = c(p,n)
+#' @param B expected sample size
+#' @param M number of iteration
+#' @param n_cores number of cores used in mclapply
+#' @param save_chain whether to save the entire chain.
+#' @export
+run_predresamp_vmf <- function(X,B = 5000, M = 50, n_cores = 1,return_chains = FALSE){
+  
+  n  <- ncol(X)
+  p  <- nrow(X)
+  c0 <- mle_vmf(X)
+  
+  chains <- mclapply(1:B, function(b) run_single_martingale(c0 = c0, N = n, M = M,save_path = return_chains),
+                     mc.cores = n_cores)
+  
+  
+  c_sam <- sapply(chains, `[[`, "c_final")
+  kappa_sam <-sapply(chains,`[[`, "kappa_final")
+  mu_sam <-sapply(chains,`[[`, "mu_final")
+  
+  sample_list <- list(
+    c_sam     = c_sam,
+    mu_sam    = mu_sam,
+    kappa_sam = kappa_sam
+  )
+
+  out <- list(sample = sample_list)
+  if (return_chains) {
+    out$chain <- chains
+  }
+  
+  out
+}
+```
+
+

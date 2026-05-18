@@ -12,13 +12,13 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="2 Package setup | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-16">
+<meta name="date" content="2026-05-18">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="prev" href="index.html">
 <link rel="next" href="helpers-functions.html">
-<script src="libs/header-attrs-2.30/header-attrs.js"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script><link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet">
+<script src="libs/header-attrs-2.31/header-attrs.js"></script><script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script><script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script><link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet">
 <link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet">
 <link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet">
 <link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet">
@@ -120,7 +120,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="6" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html">
 <a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><i class="fa fa-check"></i><b>6</b> Simulation Study: Bayesian vMF models for current direction Data</a>
 <ul>
-<li class="chapter" data-level="6.1" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sythetic-data-for-illustration"><i class="fa fa-check"></i><b>6.1</b> Sythetic data for illustration</a></li>
+<li class="chapter" data-level="6.1" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sythetic-data-for-illustration-with-p2"><i class="fa fa-check"></i><b>6.1</b> Sythetic data for illustration with p=2</a></li>
 <li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#bayesian-inference-on-a-conjugate-prior."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior.</a></li>
 <li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#predictive-posterior-via-martingale."><i class="fa fa-check"></i><b>6.3</b> Predictive Posterior via Martingale.</a></li>
 </ul>
@@ -150,7 +150,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb4-4"><a href="package-setup.html#cb4-4" tabindex="-1"></a>    <span class="at">Package =</span> params<span class="sc">$</span>package_name,</span>
 <span id="cb4-5"><a href="package-setup.html#cb4-5" tabindex="-1"></a>    <span class="at">Version =</span> <span class="st">"0.0.0.9000"</span>,</span>
 <span id="cb4-6"><a href="package-setup.html#cb4-6" tabindex="-1"></a>    <span class="at">Title =</span> <span class="st">"bayesdir"</span>,</span>
-<span id="cb4-7"><a href="package-setup.html#cb4-7" tabindex="-1"></a>    <span class="at">Description =</span> <span class="st">"Bayesian dynamic network models"</span>,</span>
+<span id="cb4-7"><a href="package-setup.html#cb4-7" tabindex="-1"></a>    <span class="at">Description =</span> <span class="st">"Implements Bayesian directional data analysis for von Mises-Fisher models and related methods."</span>,</span>
 <span id="cb4-8"><a href="package-setup.html#cb4-8" tabindex="-1"></a>    <span class="st">`</span><span class="at">Authors@R</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">person</span>(</span>
 <span id="cb4-9"><a href="package-setup.html#cb4-9" tabindex="-1"></a>      <span class="at">given =</span> <span class="st">"Sheng"</span>,</span>
 <span id="cb4-10"><a href="package-setup.html#cb4-10" tabindex="-1"></a>      <span class="at">family =</span> <span class="st">"Jiang"</span>,</span>
@@ -159,7 +159,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb4-13"><a href="package-setup.html#cb4-13" tabindex="-1"></a>      )</span>
 <span id="cb4-14"><a href="package-setup.html#cb4-14" tabindex="-1"></a>  )</span>
 <span id="cb4-15"><a href="package-setup.html#cb4-15" tabindex="-1"></a>)</span>
-<span id="cb4-16"><a href="package-setup.html#cb4-16" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_mit_license</span>(<span class="at">copyright_holder =</span> <span class="st">"Sheng Jiang"</span>)</span></code></pre></div>
+<span id="cb4-16"><a href="package-setup.html#cb4-16" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="package-setup.html#cb4-17" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="package-setup.html#cb4-18" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="package-setup.html#cb4-19" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_mit_license</span>(<span class="at">copyright_holder =</span> <span class="st">"Sheng Jiang"</span>)</span></code></pre></div>
 <p>The following is what will show up when someone types <code>package?bayesdir</code> in
 the console.</p>
 <pre class="package_doc"><code>#' bayesdir
@@ -168,26 +171,23 @@ the console.</p>
 #' 
 #' @docType package</code></pre>
 <p>This package will have some dependancies:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="package-setup.html#cb6-1" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="package-setup.html#cb6-1" tabindex="-1"></a></span>
 <span id="cb6-2"><a href="package-setup.html#cb6-2" tabindex="-1"></a><span class="do">##library(ggplot2)</span></span>
 <span id="cb6-3"><a href="package-setup.html#cb6-3" tabindex="-1"></a><span class="do">##usethis::use_package("tidyverse", type = "depends") </span></span>
 <span id="cb6-4"><a href="package-setup.html#cb6-4" tabindex="-1"></a><span class="do">## usethis::use_package("ggplot2")</span></span>
-<span id="cb6-5"><a href="package-setup.html#cb6-5" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"ggplot2"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-6"><a href="package-setup.html#cb6-6" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"MASS"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-7"><a href="package-setup.html#cb6-7" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"parallel"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-8"><a href="package-setup.html#cb6-8" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"mvnfast"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-9"><a href="package-setup.html#cb6-9" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"stats"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-10"><a href="package-setup.html#cb6-10" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"matrixsampling"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-11"><a href="package-setup.html#cb6-11" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"matrixNormal"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-12"><a href="package-setup.html#cb6-12" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"pgdraw"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-13"><a href="package-setup.html#cb6-13" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"tmvnsim"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-14"><a href="package-setup.html#cb6-14" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"rstiefel"</span>, <span class="at">type =</span> <span class="st">"depends"</span>)</span>
-<span id="cb6-15"><a href="package-setup.html#cb6-15" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="package-setup.html#cb6-16" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_pipe</span>(<span class="at">export=</span><span class="cn">TRUE</span>)</span></code></pre></div>
-<pre><code>## Warning: package 'ggplot2' was built under R version 4.4.3</code></pre>
-<pre><code>## Warning: package 'tibble' was built under R version 4.4.3</code></pre>
-<pre><code>## Warning: package 'purrr' was built under R version 4.4.3</code></pre>
-<pre><code>## Warning: package 'stringr' was built under R version 4.4.1</code></pre>
+<span id="cb6-5"><a href="package-setup.html#cb6-5" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"ggplot2"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-6"><a href="package-setup.html#cb6-6" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"MASS"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-7"><a href="package-setup.html#cb6-7" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"parallel"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-8"><a href="package-setup.html#cb6-8" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"stats"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-9"><a href="package-setup.html#cb6-9" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"rstiefel"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-10"><a href="package-setup.html#cb6-10" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"tidyverse"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-11"><a href="package-setup.html#cb6-11" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="package-setup.html#cb6-12" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_pipe</span>(<span class="at">export=</span><span class="cn">TRUE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="package-setup.html#cb7-1" tabindex="-1"></a><span class="co">#' @importFrom parallel mclapply</span></span>
+<span id="cb7-2"><a href="package-setup.html#cb7-2" tabindex="-1"></a><span class="co">#' @importFrom stats quantile rnorm sd uniroot</span></span>
+<span id="cb7-3"><a href="package-setup.html#cb7-3" tabindex="-1"></a><span class="co">#' @importFrom rstiefel rmf.vector</span></span>
+<span id="cb7-4"><a href="package-setup.html#cb7-4" tabindex="-1"></a><span class="co">#' @importFrom magrittr %&gt;%</span></span>
+<span id="cb7-5"><a href="package-setup.html#cb7-5" tabindex="-1"></a><span class="cn">NULL</span></span></code></pre></div>
 <!-- library("tmvnsim") ## for tmvnsim -->
 <!-- library("MASS") ## for mvrnorm -->
 <!-- library("scatterplot3d") # for 3d plot  -->

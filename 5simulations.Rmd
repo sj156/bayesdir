@@ -2,7 +2,7 @@
 
 This vignette demonstrates a complete simulation study using `bayesdir` on synthetic traffic data from a grid road network.
 
-```{r setup, include = FALSE}
+```{r setup, include = FALSE,eval = FALSE}
 library(bayesdir)
 library(ggplot2)
 library(dplyr)
@@ -19,7 +19,7 @@ set.seed(20260509)
 
 ------------------------------------------------------------------------
 
-## Sythetic data for illustration
+## Sythetic data for illustration with p=2
 
 ------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ Used as an benchmark. See Forbes & Mardia (2015) by $\texttt{circglmbayes}$
 
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration.
 
-```{r}
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
 sim_bayes_vm <- function(n, n_sim = 100,
                          mu_true = 2, kappa_true = 4,
                          prior = list(c = 0, R0 = 0, mu0 = 0),
@@ -156,113 +156,75 @@ Score based martingale sampling without pre-conditioner (inverse info).
 
 For efficiency, hybrid trick is adopted.
 
-```{r}
-
-# ---- Simulation study wrapper ----
-
-#' Run a simulation study for the martingale posterior (no preconditioner).
-#'
-#' @param n number of observed data points per simulated dataset
-#' @param n_sim number of simulated datasets
-#' @param mu_true true mean direction (radians), default = 2
-#' @param kappa_true true concentration parameter, default = 4
-#' @param B number of chains (posterior samples) per dataset
-#' @param nmc number of predictive resampling steps (hybrid = FALSE)
-#' @param hybrid logical; if TRUE use hybrid acceleration
-#' @param M truncation point for hybrid acceleration
-#' @param post_correct logical; if TRUE apply post‑hoc variance correction
-#' @param save_chains logical; if TRUE, return all chain details (large memory)
-#' @param seed random seed
-#' @param n_cores number of CPU cores for parallelisation (1 = serial)
-#'
-#' @return If save_chains = FALSE, a data.frame with coverage rates,
-#'   interval lengths, and mean runtime. If save_chains = TRUE, a list
-#'   containing `summary` and the raw chain objects.
+```{r, send_to = 'R/simulation.R'}
+#' functions for simulations study
+#' @param n sample size
+#' @param n_sim sim times
+#' @param mu_ture,kappa_true true param
+#' @param B number of chains
+#' @param M number of iteration for each chain
+#' @param seed 
+#' @param n_cores number of cores you can use
+#' @param save_all save data or not
+#' @return all the data with a summary we gonna used
+#' @export
 sim_martingale_study <- function(n, n_sim = 500,
                                  mu_true = 2, kappa_true = 4,
-                                 B = 200, nmc = 500,
-                                 hybrid = TRUE, M = 50,
-                                 post_correct = TRUE,
-                                 save_chains = FALSE,
+                                 B = 5000,M = 50,
                                  seed = 1234,
-                                 n_cores = 1) {
-  # Load required packages inside the function to avoid side effects when used in a package
-  requireNamespace("rstiefel", quietly = TRUE)
-  requireNamespace("circular", quietly = TRUE)
+                                 n_cores = 1,
+                                 save_all = FALSE) {
+
+  RNGkind("L'Ecuyer-CMRG")
+  set.seed(seed)
   
   # ---- Storage ----
   cover_mu <- cover_kappa <- numeric(n_sim)
   len_mu <- len_kappa <- numeric(n_sim)
   mean_mu_vec <- mean_kappa_vec <- numeric(n_sim)
   times <- numeric(n_sim)
-  
-  set.seed(seed)
-  
+  if (save_all) {results <- vector("list", n_sim)}
   
   eta_true <- kappa_true * c(cos(mu_true), sin(mu_true))
   
-  # ---- Parallelisation setup (Windows and Unix) ----
-  if (n_cores > 1) {
-    if (.Platform$OS.type == "windows") {
-      cl <- parallel::makeCluster(n_cores)
-      parallel::clusterExport(cl, c("get_Ap", "score_fn", "rvMF2",
-                                    "compute_weight_sum", "run_single_martingale"))
-      on.exit(parallel::stopCluster(cl))
-      par_fun <- function(...) parallel::parLapply(cl, ...)
-    } else {
-      par_fun <- function(...) parallel::mclapply(..., mc.cores = n_cores)
-    }
-  } else {
-    par_fun <- lapply
-  }
   
   # ---- Simulation loop ----
   for (i in 1:n_sim) {
     # Generate observations
-    theta_obs <- replicate(n, rstiefel::rmf.vector(eta_true))
+    X <- replicate(n,rstiefel::rmf.vector(eta_true))
     
-    # Compute MLE as initial natural parameter c0
-    sum_vec <- rowSums(theta_obs)  # 2-dim vector sum
-    Robs <- sqrt(sum(sum_vec^2))
-    Rbar <- Robs / n
-    mu_hat <- atan2(sum_vec[2], sum_vec[1])
-    
-    if (Rbar < 0.001) {
-      kappa_hat <- 0
-    } else if (Rbar > 0.999) {
-      kappa_hat <- 1 / (2 * (1 - Rbar))
-    } else {
-      kappa_hat <- uniroot(function(k) get_Ap(k, 2) - Rbar, c(0.001, 100))$root
-    }
-    c0 <- kappa_hat * c(cos(mu_hat), sin(mu_hat))
     
     # Run B independent chains
     t0 <- proc.time()[3]
-    chains <- par_fun(1:B, function(b) run_single_martingale(c0 = c0, N = n, nmc = nmc,
-                                                             hybrid = hybrid, M = M,
-                                                             post_correct = post_correct, p = 2))
+    chains<- run_predresamp_vmf(X, B = 5000, M=50,n_cores = n_cores,
+                                return_chains = save_all)
     t1 <- proc.time()[3]
     times[i] <- t1 - t0
     
     # Extract samples
-    mu_sam <- sapply(chains, `[[`, "mu_final")
-    kappa_sam <- sapply(chains, `[[`, "kappa_final")
+    sample_list <- chains$sample
+    
+    mu_sam <- sample_list$mu_sam
+    kappa_sam <- sample_list$kappa_sam
+    
     mean_mu_vec[i] <- mean(mu_sam)
     mean_kappa_vec[i] <- mean(kappa_sam)
     
     # 95% credible intervals for mu and kappa
-    ci_mu <- quantile(mu_sam, c(0.025, 0.975))
-    cover_mu[i] <- (mu_true >= ci_mu[1]) & (mu_true <= ci_mu[2])
+    ci_mu <- quantile(mu_sam, probs = c(0.025, 0.975))
+    cover_mu[i] <- (mu_true >= ci_mu[1] && mu_true <= ci_mu[2])
     len_mu[i] <- ci_mu[2] - ci_mu[1]
     
     ci_kappa <- quantile(kappa_sam, c(0.025, 0.975))
     cover_kappa[i] <- (kappa_true >= ci_kappa[1]) & (kappa_true <= ci_kappa[2])
     len_kappa[i] <- ci_kappa[2] - ci_kappa[1]
     
+    if (save_all) {results[[i]]<- chains}
+    
   }
   
   # ---- Build output table ----
-  result <- data.frame(
+  summarys <- data.frame(
     n = n,
     Coverage_mu = mean(cover_mu) * 100,
     Length_mu = mean(len_mu),
@@ -273,10 +235,10 @@ sim_martingale_study <- function(n, n_sim = 500,
     Mean_Time = mean(times)
   )
   
-  if (save_chains) {
-    list(summary = result, chains = chains)
+  if (save_all) {
+    list(summary = summarys, data_all = results)
   } else {
-    result
+    summarys
   }
 }
 
@@ -297,13 +259,9 @@ print(result_table_bayes)
 
 ```{r,eval = FALSE, include=FALSE,purl=FALSE}
 n_cores <- detectCores()-2
-res_mart10 <- sim_martingale_study(n=10,n_sim = 1, B = 5000, nmc =50, hybrid = TRUE,
-                                   M = 50, post_correct = TRUE,n_cores = n_cores, save_chains = TRUE)
-res_mart30 <- sim_martingale_study(n=30,n_sim = 1, B = 5000, nmc =50, hybrid = TRUE,
-                                   M = 50, post_correct = TRUE,n_cores = n_cores,save_chains = TRUE)
-res_mart100 <- sim_martingale_study(n=100,n_sim = 1, B = 5000, nmc =50, hybrid = TRUE,
-                                   M = 50, post_correct = TRUE,n_cores = n_cores,save_chains = TRUE)
-
+res_mart10 <- sim_martingale_study(n=10,n_sim = 5000, B = 5000,M = 50,n_cores = n_cores, save_all = TRUE)
+res_mart30 <- sim_martingale_study(n=30,n_sim = 5000, B = 5000,M = 50,n_cores = n_cores, save_all = TRUE)
+res_mart100 <- sim_martingale_study(n=100,n_sim = 5000, B = 5000,M = 50,n_cores = n_cores, save_all = TRUE)
 
 result_table_mart <- rbind(res_mart10$summary, res_mart30$summary, res_mart100$summary)
 print(result_table_mart)

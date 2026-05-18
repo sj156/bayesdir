@@ -5,6 +5,6 @@ syntheticdata
 predictive-resampler
 the-main-sampler
 simulation-study-bayesian-vmf-models-for-current-direction-data
-sythetic-data-for-illustration
+sythetic-data-for-illustration-with-p2
 bayesian-inference-on-a-conjugate-prior.
 predictive-posterior-via-martingale.

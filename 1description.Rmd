@@ -9,7 +9,7 @@ usethis::create_package(
     Package = params$package_name,
     Version = "0.0.0.9000",
     Title = "bayesdir",
-    Description = "Bayesian dynamic network models",
+    Description = "Implements Bayesian directional data analysis for von Mises-Fisher models and related methods.",
     `Authors@R` = person(
       given = "Sheng",
       family = "Jiang",
@@ -18,6 +18,9 @@ usethis::create_package(
       )
   )
 )
+
+
+
 usethis::use_mit_license(copyright_holder = "Sheng Jiang")
 ```
 
@@ -36,25 +39,27 @@ the console.
 This package will have some dependancies:
 
 ```{r dependencies, message = FALSE}
-library(tidyverse)
+
 ##library(ggplot2)
 ##usethis::use_package("tidyverse", type = "depends") 
 ## usethis::use_package("ggplot2")
-usethis::use_package("ggplot2", type = "depends")
-usethis::use_package("MASS", type = "depends")
-usethis::use_package("parallel", type = "depends")
-usethis::use_package("mvnfast", type = "depends")
-usethis::use_package("stats", type = "depends")
-usethis::use_package("matrixsampling", type = "depends")
-usethis::use_package("matrixNormal", type = "depends")
-usethis::use_package("pgdraw", type = "depends")
-usethis::use_package("tmvnsim", type = "depends")
-usethis::use_package("rstiefel", type = "depends")
-usethis::use_package("circglmbayes", type = "depends")
-usethis::use_package("circular", type = "depends")
+usethis::use_package("ggplot2", type = "imports")
+usethis::use_package("MASS", type = "imports")
+usethis::use_package("parallel", type = "imports")
+usethis::use_package("stats", type = "imports")
+usethis::use_package("rstiefel", type = "imports")
+usethis::use_package("tidyverse", type = "imports")
+
 usethis::use_pipe(export=TRUE)
 ```
 
+```{r, send_to = 'R/imports.R'}
+#' @importFrom parallel mclapply
+#' @importFrom stats quantile rnorm sd uniroot
+#' @importFrom rstiefel rmf.vector
+#' @importFrom magrittr %>%
+NULL
+```
 
 
 

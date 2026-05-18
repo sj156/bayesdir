@@ -11,5 +11,10 @@ This package implements the \code{bayesdir} method.
 \author{
 \strong{Maintainer}: Sheng Jiang \email{jiangsheng@cuhk.edu.cn}
 
+Authors:
+\itemize{
+  \item Sheng Jiang \email{jiangsheng@cuhk.edu.cn}
+}
+
 }
 \keyword{internal}
