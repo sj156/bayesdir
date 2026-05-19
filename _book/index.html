@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-18">
+<meta name="date" content="2026-05-19">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -141,7 +141,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
             <section class="normal" id="section-"><div id="header">
 <h1 class="title">Creating the <code>bayesdir</code> R package</h1>
 <p class="author"><em>Sheng Jiang</em></p>
-<p class="date"><em>2026-05-18</em></p>
+<p class="date"><em>2026-05-19</em></p>
 </div>
 <div id="introduction" class="section level1 hasAnchor" number="1">
 <h1>
@@ -173,7 +173,7 @@ package are both created using one simple command:</p>
 <span id="cb2-17"><a href="index.html#cb2-17" tabindex="-1"></a><span class="co"># Step 4: Load the installed package (optional, if you want to test installation)</span></span>
 <span id="cb2-18"><a href="index.html#cb2-18" tabindex="-1"></a><span class="fu">library</span>(bayesdir)</span>
 <span id="cb2-19"><a href="index.html#cb2-19" tabindex="-1"></a></span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="index.html#cb3-1" tabindex="-1"></a><span class="co">#setwd("~/repos/bayesdir/") </span></span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="index.html#cb3-1" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">"~/repos/bayesdir/"</span>) </span>
 <span id="cb3-2"><a href="index.html#cb3-2" tabindex="-1"></a><span class="do">## 1. Delete the auto-generated _main.Rmd file</span></span>
 <span id="cb3-3"><a href="index.html#cb3-3" tabindex="-1"></a><span class="fu">unlink</span>(<span class="st">"_main.Rmd"</span>)</span>
 <span id="cb3-4"><a href="index.html#cb3-4" tabindex="-1"></a><span class="fu">unlink</span>(<span class="st">"_bookdown_files"</span>, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
@@ -184,15 +184,12 @@ package are both created using one simple command:</p>
 <span id="cb3-9"><a href="index.html#cb3-9" tabindex="-1"></a></span>
 <span id="cb3-10"><a href="index.html#cb3-10" tabindex="-1"></a><span class="do">## 2. Re-run the render command</span></span>
 <span id="cb3-11"><a href="index.html#cb3-11" tabindex="-1"></a>litr<span class="sc">::</span><span class="fu">render</span>(</span>
-<span id="cb3-12"><a href="index.html#cb3-12" tabindex="-1"></a>  <span class="st">"index.Rmd"</span>, </span>
-<span id="cb3-13"><a href="index.html#cb3-13" tabindex="-1"></a>  <span class="at">output_format =</span> litr<span class="sc">::</span><span class="fu">litr_gitbook</span>(</span>
-<span id="cb3-14"><a href="index.html#cb3-14" tabindex="-1"></a>    <span class="at">minimal_eval =</span> <span class="cn">TRUE</span> </span>
-<span id="cb3-15"><a href="index.html#cb3-15" tabindex="-1"></a>    )</span>
-<span id="cb3-16"><a href="index.html#cb3-16" tabindex="-1"></a>)</span>
-<span id="cb3-17"><a href="index.html#cb3-17" tabindex="-1"></a></span>
-<span id="cb3-18"><a href="index.html#cb3-18" tabindex="-1"></a><span class="do">## 3. Document and load the package</span></span>
-<span id="cb3-19"><a href="index.html#cb3-19" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">document</span>(<span class="st">"bayesdir"</span>)</span>
-<span id="cb3-20"><a href="index.html#cb3-20" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">load_all</span>(<span class="st">"bayesdir"</span>)</span></code></pre></div>
+<span id="cb3-12"><a href="index.html#cb3-12" tabindex="-1"></a>  <span class="st">"index.Rmd"</span>, <span class="at">output_format =</span> litr<span class="sc">::</span><span class="fu">litr_gitbook</span>(<span class="at">minimal_eval =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-13"><a href="index.html#cb3-13" tabindex="-1"></a>)</span>
+<span id="cb3-14"><a href="index.html#cb3-14" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="index.html#cb3-15" tabindex="-1"></a><span class="do">## 3. Document and load the package</span></span>
+<span id="cb3-16"><a href="index.html#cb3-16" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">document</span>(<span class="st">"bayesdir"</span>)</span>
+<span id="cb3-17"><a href="index.html#cb3-17" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">load_all</span>(<span class="st">"bayesdir"</span>)</span></code></pre></div>
 
 </div>
             </section>

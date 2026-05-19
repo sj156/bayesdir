@@ -50,7 +50,7 @@ library(bayesdir)
 
 
 ```{r, eval = FALSE}
-#setwd("~/repos/bayesdir/") 
+setwd("~/repos/bayesdir/") 
 ## 1. Delete the auto-generated _main.Rmd file
 unlink("_main.Rmd")
 unlink("_bookdown_files", recursive = TRUE)
@@ -61,10 +61,7 @@ if(!dir.create("bayesdir")){
 
 ## 2. Re-run the render command
 litr::render(
-  "index.Rmd", 
-  output_format = litr::litr_gitbook(
-    minimal_eval = TRUE 
-    )
+  "index.Rmd", output_format = litr::litr_gitbook(minimal_eval = TRUE)
 )
 
 ## 3. Document and load the package
