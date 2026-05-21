@@ -138,9 +138,9 @@ sim_compare_vmf <- function(n, n_sim = 100,
 ```
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-res500 <- sim_compare_vmf(n=500,n_sim=10,B=100,M=1000,n_cores = 6)
-res200 <- sim_compare_vmf(n=200,n_sim=10,B=100,M=1000,n_cores = 6)
-res100 <- sim_compare_vmf(n=100,n_sim=10,B=100,M=1000,n_cores = 6)
-res10 <- sim_compare_vmf(n=10,n_sim=10,B=100,M=1000,n_cores = 6)
+res500 <- sim_compare_vmf(n=500,n_sim=10,B=100,M=1000,n_cores = 1)
+res200 <- sim_compare_vmf(n=200,n_sim=10,B=100,M=1000,n_cores = 15)
+res100 <- sim_compare_vmf(n=100,n_sim=10,B=100,M=1000,n_cores = 15)
+res10 <- sim_compare_vmf(n=10,n_sim=10,B=100,M=1000,n_cores = 15)
 ```
 
