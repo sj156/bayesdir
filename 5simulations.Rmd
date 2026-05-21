@@ -7,11 +7,11 @@ library(bayesdir)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(patchwork)
+## library(patchwork) ## for what? 
 library(RColorBrewer)
-library(rstiefel)
-library(circular)
-library(circglmbayes)
+library(rstiefel) 
+library(circular) ## for what? 
+library(circglmbayes) ## for what? 
 library(parallel)
 
 set.seed(20260509)
@@ -138,9 +138,15 @@ sim_compare_vmf <- function(n, n_sim = 100,
 ```
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-res500 <- sim_compare_vmf(n=500,n_sim=10,B=100,M=1000,n_cores = 1)
-res200 <- sim_compare_vmf(n=200,n_sim=10,B=100,M=1000,n_cores = 15)
-res100 <- sim_compare_vmf(n=100,n_sim=10,B=100,M=1000,n_cores = 15)
-res10 <- sim_compare_vmf(n=10,n_sim=10,B=100,M=1000,n_cores = 15)
+nn_cores = max(detectCores() - 1 , 1)
+res500 <- sim_compare_vmf(n=500,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+res200 <- sim_compare_vmf(n=200,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+res100 <- sim_compare_vmf(n=100,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+res10 <- sim_compare_vmf(n=10,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+
+getwd()
+setwd("~/")
+save(res500, res200, res100, res10, file = "vmf_simulation_results.RData")
+
 ```
 
