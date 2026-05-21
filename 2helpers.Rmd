@@ -181,4 +181,173 @@ sim_martingale_study <- function(n, n_sim = 500,
 ```
 
 
+```{r plot_trace_sideways_density, include=FALSE}
+#' Plot MPS traces with an attached sideways density
+#'
+#' Draws simulated MPS trace paths on the left and attaches the terminal
+#' posterior density on the right. The x-axis is drawn only over the trace
+#' region, so iteration labels do not extend into the attached density region.
+#'
+#' @param paths Numeric matrix of trace paths. Rows are paths/chains and columns
+#'   are iterations. For example, `res_paths$paths`.
+#' @param samples Numeric vector of terminal MPS samples used for the attached
+#'   sideways density.
+#' @param iter Numeric vector of iteration indices. Defaults to
+#'   `0:(ncol(paths) - 1)`.
+#' @param ref_value Optional horizontal reference value, such as an MLE or sample
+#'   mean.
+#' @param ref_density_fun Optional function of `y` returning a reference density
+#'   on the same vertical scale, e.g.
+#'   `function(y) dnorm(y, mean = mu_hat, sd = sqrt(1 / n))`.
+#' @param xlab,ylab,main Axis labels and title.
+#' @param density_width_frac Width of the attached density as a fraction of the
+#'   trace x-range.
+#' @param density_x_offset_frac Starting location of the attached density as a
+#'   fraction of the trace x-range.
+#' @param xlim_multiplier Total x-range multiplier used to reserve space for the
+#'   attached density.
+#' @return Invisibly returns a list with the estimated density, y-range,
+#'   density x-offset, and density scaling factor.
+plot_trace_sideways_density <- function(
+  paths,
+  samples,
+  iter = NULL,
+  ref_value = NULL,
+  ref_density_fun = NULL,
+  xlab = "Forward step i",
+  ylab = expression(hat(mu)[n+i]),
+  main = NULL,
+  trace_col = rgb(0.25, 0.45, 0.75, 0.06),
+  trace_lwd = 0.5,
+  density_fill = rgb(0.25, 0.45, 0.75, 0.30),
+  density_border = rgb(0.20, 0.35, 0.65),
+  density_lwd = 1.2,
+  ref_col = "red",
+  ref_lwd = 1.5,
+  ref_lty = 2,
+  ref_density_col = "red",
+  ref_density_lwd = 2,
+  density_width_frac = 0.22,
+  density_x_offset_frac = 1.02,
+  xlim_multiplier = 1.25,
+  y_pad_frac = 0.04,
+  cex_lab = 1.2,
+  cex_axis = 1.0,
+  cex_main = 1.2,
+  cex_leg = 0.9,
+  legend_pos = "topleft",
+  show_legend = TRUE
+) {
+  if (!is.matrix(paths)) paths <- as.matrix(paths)
+  if (!is.numeric(paths)) stop("`paths` must be numeric.")
+  if (!is.numeric(samples)) stop("`samples` must be numeric.")
+
+  if (is.null(iter)) iter <- seq_len(ncol(paths)) - 1
+  if (length(iter) != ncol(paths)) {
+    stop("`iter` must have length equal to `ncol(paths)`.")
+  }
+
+  x_start <- min(iter)
+  x_end <- max(iter)
+  x_width <- x_end - x_start
+  if (x_width <= 0) stop("`iter` must span a positive range.")
+
+  y_range <- range(c(as.vector(paths), samples, ref_value), finite = TRUE)
+  y_pad <- y_pad_frac * diff(y_range)
+  if (!is.finite(y_pad) || y_pad == 0) y_pad <- 0.1
+  y_range <- y_range + c(-y_pad, y_pad)
+
+  dens <- density(samples, n = 512)
+  y_grid <- seq(y_range[1], y_range[2], length.out = 500)
+
+  ref_density <- NULL
+  if (!is.null(ref_density_fun)) ref_density <- ref_density_fun(y_grid)
+
+  dens_scale <- x_width * density_width_frac / max(dens$y, ref_density, na.rm = TRUE)
+  x_offset <- x_start + x_width * density_x_offset_frac
+  x_max <- x_start + x_width * xlim_multiplier
+
+  plot(
+    NULL,
+    xlim = c(x_start, x_max),
+    ylim = y_range,
+    xlab = "",
+    ylab = ylab,
+    main = main,
+    xaxt = "n",
+    cex.lab = cex_lab,
+    cex.axis = cex_axis,
+    cex.main = cex_main
+  )
+
+  ticks <- pretty(c(x_start, x_end))
+  ticks <- ticks[ticks >= x_start & ticks <= x_end]
+  axis(1, at = ticks, labels = ticks, lwd = 0, lwd.ticks = 1, cex.axis = cex_axis)
+  usr <- par("usr")
+  segments(x_start, usr[3], x_end, usr[3], xpd = FALSE)
+  mtext(xlab, side = 1, line = 2.8, at = (x_start + x_end) / 2, cex = cex_lab)
+
+  for (i in seq_len(nrow(paths))) {
+    lines(iter, paths[i, ], col = trace_col, lwd = trace_lwd)
+  }
+
+  if (!is.null(ref_value)) {
+    abline(h = ref_value, col = ref_col, lwd = ref_lwd, lty = ref_lty)
+  }
+
+  polygon(
+    x_offset + dens$y * dens_scale,
+    dens$x,
+    col = density_fill,
+    border = density_border,
+    lwd = density_lwd
+  )
+
+  if (!is.null(ref_density)) {
+    lines(
+      x_offset + ref_density * dens_scale,
+      y_grid,
+      col = ref_density_col,
+      lwd = ref_density_lwd
+    )
+  }
+
+  segments(x_offset, y_range[1], x_offset, y_range[2],
+           col = "gray60", lty = 3, lwd = 0.8)
+
+  if (show_legend) {
+    legend(
+      legend_pos,
+      legend = c("MPS trajectories", "Reference value",
+                 "MPS density", "Reference density"),
+      col = c(adjustcolor(trace_col, alpha.f = 0.6), ref_col,
+              density_border, ref_density_col),
+      lty = c(1, ref_lty, 1, 1),
+      lwd = c(1.5, ref_lwd, density_lwd, ref_density_lwd),
+      pch = c(NA, NA, 15, NA),
+      pt.cex = c(NA, NA, 1.5, NA),
+      bty = "n",
+      cex = cex_leg
+    )
+  }
+
+  invisible(list(
+    density = dens,
+    y_range = y_range,
+    x_offset = x_offset,
+    dens_scale = dens_scale
+  ))
+}
+
+### Example Usage:
+#plot_trace_sideways_density(
+#  paths = res_paths$paths,
+#  samples = samples,
+#  iter = 0:T_iter,
+#  ref_value = mu_hat,
+#  ref_density_fun = function(y) dnorm(y, mean = mu_hat, sd = sqrt(1 / n)),
+#  main = "(a)"
+#)
+```
+
 
