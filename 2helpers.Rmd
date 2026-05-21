@@ -349,5 +349,3 @@ plot_trace_sideways_density <- function(
 #  main = "(a)"
 #)
 ```
-
-

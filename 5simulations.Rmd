@@ -30,149 +30,95 @@ Used as an benchmark. See Forbes & Mardia (2015) by $\texttt{circglmbayes}$
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration.
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-sim_bayes_vm <- function(n, n_sim = 100,
-                         mu_true = 2, kappa_true = 4,
-                         prior = list(c = 0, R0 = 0, mu0 = 0),
-                         n_iter = 10000, burn = 5000,
-                         save_chains = FALSE,   
-                         seed = 2024) {
+generate_vmf_data <- function(n, mu_true, kappa_true) {
+  
+  eta_true <- kappa_true * c(cos(mu_true), sin(mu_true))
+  raw_samples <- replicate(n, rstiefel::rmf.vector(eta_true))
+  X_cartesian <- matrix(raw_samples, nrow = 2, ncol = n)
+  theta_rad <- atan2(X_cartesian[2, ], X_cartesian[1, ])
+  list(X = X_cartesian, theta = theta_rad)
+}
 
-  
-  c   <- prior$c
-  R0  <- prior$R0
-  mu0 <- prior$mu0
-  
-  cover_mu    <- numeric(n_sim)
-  cover_kappa <- numeric(n_sim)
-  len_mu      <- numeric(n_sim)
-  len_kappa   <- numeric(n_sim)
-  mean_mu     <- numeric(n_sim)
-  mean_kappa  <- numeric(n_sim)
-  mcse_mu     <- numeric(n_sim)
-  mcse_kappa  <- numeric(n_sim)
-  runtimes    <- numeric(n_sim)
-  
-  if (save_chains) {
-    chains_list <- vector("list", n_sim)
-  }
+
+sim_compare_vmf <- function(n, n_sim = 100,
+                            mu_true = 2, kappa_true = 4,
+                            B = 5000, M = 50,
+                            prior = list(c = 0, R0 = 0, mu0 = 0),
+                            seed = 1234, n_cores = 1) {
   
   set.seed(seed)
   
+
+  get_stats <- function(samples, true_val) {
+    ci <- quantile(samples, probs = c(0.025, 0.975))
+    list(
+      cover = as.numeric(true_val >= ci[1] && true_val <= ci[2]),
+      len = as.numeric(ci[2] - ci[1]),
+      est = var(samples) 
+    )
+  }
+
+  res_mart <- vector("list", n_sim)
+  res_bayes <- vector("list", n_sim)
+
   for (i in 1:n_sim) {
-    theta <- as.numeric(rvonmises(n, circular(mu_true), kappa_true))
-    
-
-    C_n <- R0 * cos(mu0) + sum(cos(theta))
-    S_n <- R0 * sin(mu0) + sum(sin(theta))
-    Rn <- sqrt(C_n^2 + S_n^2)
-    theta_bar_n <- atan2(S_n, C_n)
-    eta <- c + n
-    
-
-    Rbar <- Rn / n
-    if (Rbar < 0.001) {
-      kappa_init <- 0
-    } else if (Rbar > 0.999) {
-      kappa_init <- 1 / (2 * (1 - Rbar))
-    } else {
-      solve_kappa <- function(k) besselI(k, 1, expon.scaled = TRUE) / besselI(k, 0, expon.scaled = TRUE) - Rbar
-      kappa_init <- uniroot(solve_kappa, c(0.001, 100))$root
-    }
-    mu_init <- theta_bar_n
-    
-    mu_sam    <- numeric(n_iter)
-    kappa_sam <- numeric(n_iter)
-    mu_sam[1]    <- mu_init
-    kappa_sam[1] <- kappa_init
-    
-    rvm_one <- function(mean_rad, kappa) {
-      as.numeric(rvonmises(1, circular(mean_rad), kappa))
-    }
+    data <- generate_vmf_data(n, mu_true, kappa_true)
     
     t0 <- proc.time()[3]
-    for (iter in 2:n_iter) {
-      mu_sam[iter] <- rvm_one(theta_bar_n, kappa_sam[iter - 1] * Rn)
-      etag <- -Rn * cos(mu_sam[iter] - theta_bar_n)
-      kappa_sam[iter] <- circglmbayes:::sampleKappa(etag = etag, eta = eta)[1]
-    }
+    m_chains <- run_predresamp_vmf(data$X, B = B, M = M, n_cores = n_cores)
     t1 <- proc.time()[3]
-    runtimes[i] <- t1 - t0
     
+    m_mu <- get_stats(m_chains$sample$mu_sam, mu_true)
+    m_ka <- get_stats(m_chains$sample$kappa_sam, kappa_true)
+    
+    res_mart[[i]] <- data.frame(
+      c_mu = m_mu$cover, l_mu = m_mu$len, e_mu = m_mu$est,
+      c_ka = m_ka$cover, l_ka = m_ka$len, e_ka = m_ka$est,
+      time = t1 - t0
+    )
 
-    mu_post    <- mu_sam[-(1:burn)]
-    kappa_post <- kappa_sam[-(1:burn)]
-    B_post <- length(mu_post)
+    t2 <- proc.time()[3]
+    b_samples <- fit_mcmc_vmf(data$theta, prior, n_iter = B+5000, burn=5000)
+    t3 <- proc.time()[3]
     
-    mean_mu[i]    <- mean(mu_post)
-    mean_kappa[i] <- mean(kappa_post)
+    b_mu <- get_stats(b_samples[, "mu"], mu_true)
+    b_ka <- get_stats(b_samples[, "kappa"], kappa_true)
     
-    
-    ci_mu    <- quantile(mu_post, c(0.025, 0.975))
-    ci_kappa <- quantile(kappa_post, c(0.025, 0.975))
-    
-    cover_mu[i]    <- (mu_true >= ci_mu[1] && mu_true <= ci_mu[2])
-    len_mu[i]      <- ci_mu[2] - ci_mu[1]
-    cover_kappa[i] <- (kappa_true >= ci_kappa[1] && kappa_true <= ci_kappa[2])
-    len_kappa[i]   <- ci_kappa[2] - ci_kappa[1]
-    
-
-    if (save_chains) {
-      chains_list[[i]] <- cbind(mu = mu_sam, kappa = kappa_sam)
-    }
+    res_bayes[[i]] <- data.frame(
+      c_mu = b_mu$cover, l_mu = b_mu$len, e_mu = b_mu$est,
+      c_ka = b_ka$cover, l_ka = b_ka$len, e_ka = b_ka$est,
+      time = t3 - t2
+    )
   }
-  
- 
-  summary_df <- data.frame(
-    n = n,
-    Coverage_mu    = mean(cover_mu) * 100,
-    Length_mu      = mean(len_mu),
-    Coverage_kappa = mean(cover_kappa) * 100,
-    Length_kappa   = mean(len_kappa),
-    SE_Mean_mu    = sd(mean_mu),
-    SE_Mean_kappa = sd(mean_kappa),
-    Mean_Time       = mean(runtimes)
+
+  df_mart <- do.call(rbind, res_mart)
+  df_bayes <- do.call(rbind, res_bayes)
+
+  summarize_res <- function(df) {
+    data.frame(
+      n = n,
+      Cov_mu  = mean(df$c_mu) * 100,
+      Len_mu  = mean(df$l_mu),
+      Max_Var_mu  = max(df$e_mu),  
+      Cov_ka  = mean(df$c_ka) * 100,
+      Len_ka  = mean(df$l_ka),
+      Max_Var_ka  = max(df$e_ka), 
+      Mean_Time = mean(df$time)
+    )
+  }
+
+  final_summary <- rbind(
+    cbind(Method = "Martingale", summarize_res(df_mart)),
+    cbind(Method = "BayesMCMC", summarize_res(df_bayes))
   )
-  
-  if (save_chains) {
-    return(list(summary = summary_df, chains = chains_list))
-  } else {
-    return(summary_df)
-  }
+
+  return(final_summary)
 }
 ```
 
-```{r, eval=FALSE}
-res_bayes30  <- sim_bayes_vm(n = 30, n_sim = 10)
-res_bayes100 <- sim_bayes_vm(n = 100, n_sim = 10)
-
-result_table <- rbind(res_bayes10, res_bayes30, res_bayes100)
-print(result_table, digits = 3)
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+res100 <- sim_compare_vmf(n=100,n_sim=10,B=100,M=1000,n_cores = 6)
+res30 <- sim_compare_vmf(n=30,n_sim=10,B=100,M=1000,n_cores = 6)
+res10 <- sim_compare_vmf(n=10,n_sim=10,B=100,M=1000,n_cores = 6)
 ```
 
-## Predictive Posterior via Martingale.
-
-Score based martingale sampling without pre-conditioner (inverse info).
-
-For efficiency, hybrid trick is adopted.
-
-Simulation with n_sim = 5000, B = 5000, M = 50
-
-```{r,eval = FALSE, include=FALSE,purl=FALSE}
-res_bayes_10 <- sim_bayes_vm(n=10,n_sim = 1, save_chains = TRUE)
-res_bayes_30 <- sim_bayes_vm(n=30,n_sim = 1,save_chains = TRUE)
-res_bayes_100 <- sim_bayes_vm(n=100,n_sim= 1, save_chains = TRUE)
-
-
-result_table_bayes <- rbind(res_bayes_10$summary, res_bayes_30$summary, res_bayes_100$summary)
-print(result_table_bayes)
-```
-
-```{r,eval = FALSE, include=FALSE,purl=FALSE}
-n_cores <- detectCores()-2
-res_mart10 <- sim_martingale_study(n=10,n_sim = 5000, B = 5000,M = 50,n_cores = n_cores, save_all = TRUE)
-res_mart30 <- sim_martingale_study(n=30,n_sim = 5000, B = 5000,M = 50,n_cores = n_cores, save_all = TRUE)
-res_mart100 <- sim_martingale_study(n=100,n_sim = 5000, B = 5000,M = 50,n_cores = n_cores, save_all = TRUE)
-
-result_table_mart <- rbind(res_mart10$summary, res_mart30$summary, res_mart100$summary)
-print(result_table_mart)
-```
