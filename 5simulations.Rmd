@@ -40,6 +40,27 @@ generate_vmf_data <- function(n, mu_true, kappa_true) {
 }
 
 
+fit_mcmc_vmf <- function(theta, prior, n_iter = 10000, burn = 5000) {
+  n <- length(theta)
+  C_n <- prior$R0 * cos(prior$mu0) + sum(cos(theta))
+  S_n <- prior$R0 * sin(prior$mu0) + sum(sin(theta))
+  Rn <- sqrt(C_n^2 + S_n^2)
+  theta_bar_n <- atan2(S_n, C_n)
+  eta_param <- prior$c + n
+  
+  mu_sam <- numeric(n_iter); kappa_sam <- numeric(n_iter)
+  mu_sam[1] <- theta_bar_n; kappa_sam[1] <- 1
+  
+  for (iter in 2:n_iter) {
+    mu_sam[iter] <- as.numeric(circular::rvonmises(1, circular::circular(theta_bar_n), kappa_sam[iter - 1] * Rn))
+    etag <- -Rn * cos(mu_sam[iter] - theta_bar_n)
+    kappa_sam[iter] <- circglmbayes:::sampleKappa(etag = etag, eta = eta_param)[1]
+  }
+  cbind(mu = mu_sam[-(1:burn)], kappa = kappa_sam[-(1:burn)])
+}
+
+
+
 sim_compare_vmf <- function(n, n_sim = 100,
                             mu_true = 2, kappa_true = 4,
                             B = 5000, M = 50,
