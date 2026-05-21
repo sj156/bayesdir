@@ -2,7 +2,7 @@
 % Please edit documentation in R/all-helpers.R
 \name{score_fn}
 \alias{score_fn}
-\title{Compute the score function s(eta, x) = x - E\link{X} for vMF.}
+\title{Compute the score function s(eta, x) for vMF.}
 \usage{
 score_fn(eta, x, p = 2)
 }
@@ -17,5 +17,5 @@ score_fn(eta, x, p = 2)
 score vector of length p
 }
 \description{
-Compute the score function s(eta, x) = x - E\link{X} for vMF.
+Compute the score function s(eta, x) for vMF.
 }

@@ -3,6 +3,7 @@
 export("%>%")
 export(compute_weight_sum)
 export(get_Ap)
+export(get_FIM_vmf)
 export(mle_vmf)
 export(run_predresamp_vmf)
 export(run_single_martingale)

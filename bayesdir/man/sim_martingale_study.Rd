@@ -25,6 +25,8 @@ sim_martingale_study(
 
 \item{M}{number of iteration for each chain}
 
+\item{seed}{for reproducability}
+
 \item{n_cores}{number of cores you can use}
 
 \item{save_all}{save data or not}

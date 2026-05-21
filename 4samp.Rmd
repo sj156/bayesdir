@@ -3,14 +3,13 @@
 ## The main sampler
 
 The main Gibbs sampler is called `run_predresamp_vmf()`. 
-
 ```{r, send_to = 'R/samp.R'}
 #' Run a single martingale posterior chain (no preconditioner).
-#' @param c0 initial natural parameter vector(usually use MLE)
+#' @param c0 initial natural parameter vector(use MLE)
 #' @param N number of observed data points
-#' @param M number of iteration (default = 20)
+#' @param M number of iteration 
 #' @return A list with components:
-#'   \item{c_final}{final natural parameter vector (after possible correction)}
+#'   \item{c_final}{final natural parameter vector after possible correction}
 #'   \item{mu_final}{mean direction (angle in radians if p=2)}
 #'   \item{kappa_final}{concentration parameter}
 #'   \item{x_chain}{all new x generated}
@@ -21,24 +20,23 @@ run_single_martingale <- function(c0, N, M = 20,save_path = FALSE) {
   p <- length(c0)
   c_curr <- c0
   V_mat <- matrix(0, p, p)          # accumulated un‑preconditioned score outer products
-  
+  total_w <- 0
 
   if (save_path) {
     x_chain <- matrix(0, p, M)
     c_chain <- matrix(0, p, M)
   }
   
-  w_cur <- compute_weight_sum(1, M, N)       
-  w_rem <- compute_weight_sum(M + 1, M + 10000, N)  
-  total_w <- w_cur + w_rem
   
- # ---- Hybrid acceleration: M steps + Gaussian correction ----
+  
+  # main loop
   w_cur <- compute_weight_sum(1, M, N)
   for (t in 1:M) {
       x_new <- rstiefel::rmf.vector(c_curr)
       s <- score_fn(c_curr, x_new, p)
-      wt <- 1 / (t + N)
-      V_mat <- V_mat + wt^2 * tcrossprod(s)
+      wt <- 1 / (t + N-1)
+      total_w <- total_w + wt^2
+      V_mat <- V_mat + wt^2 * get_FIM_vmf(c_curr,p)
       c_curr <- c_curr + wt * s
       
       if (save_path) {
@@ -48,30 +46,17 @@ run_single_martingale <- function(c0, N, M = 20,save_path = FALSE) {
       
   }
   
-
-  r <- w_rem / w_cur
-  Cov_rem <- r * V_mat
-  Sigma_used <- V_mat + Cov_rem   # total covariance estimate
+  # Variance correction for first m step
+  safe_sym_inverse <- function(M, tol = 1e-10) {
+    eig <- eigen((M + t(M)) / 2, symmetric = TRUE)
+    vals_inv <- 1 / pmax(eig$values, tol)
+    eig$vectors %*% diag(vals_inv) %*% t(eig$vectors)
+  }
   
-  # Gaussian correction
-  eig <- eigen(Cov_rem, symmetric = TRUE)
-  eig$values[eig$values < 0] <- 0
-  sqrt_Cov_rem <- eig$vectors %*% diag(sqrt(eig$values)) %*% t(eig$vectors)
-  epsilon <- rnorm(p)
-  c_curr <- c_curr + sqrt_Cov_rem %*% epsilon
-    
-    
-    
-  
-  # ---- Post‑hoc variance correction ----
   delta <- c_curr - c0
-  
-  # Use eigendecomposition for stable inversion of the covariance matrix
-  eigS <- eigen(Sigma_used, symmetric = TRUE)
-  eigS$values[eigS$values < 1e-12] <- 0
-  inv_Sigma <- eigS$vectors %*% diag(ifelse(eigS$values > 0, 1/eigS$values, 0)) %*% t(eigS$vectors)
-  c_curr <- c0 + total_w * (inv_Sigma %*% delta)
-
+  A <- total_w * safe_sym_inverse(V_mat, tol = 1e-10)
+  c_curr <- c0 + A %*% delta
+ 
   # ---- Convert to polar coordinates (mu, kappa) for p=2----
   kappa_final <- sqrt(sum(c_curr^2))
   if (p == 2) {

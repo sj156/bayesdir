@@ -7,15 +7,15 @@
 run_single_martingale(c0, N, M = 20, save_path = FALSE)
 }
 \arguments{
-\item{c0}{initial natural parameter vector(usually use MLE)}
+\item{c0}{initial natural parameter vector(use MLE)}
 
 \item{N}{number of observed data points}
 
-\item{M}{number of iteration (default = 20)}
+\item{M}{number of iteration}
 }
 \value{
 A list with components:
-\item{c_final}{final natural parameter vector (after possible correction)}
+\item{c_final}{final natural parameter vector after possible correction}
 \item{mu_final}{mean direction (angle in radians if p=2)}
 \item{kappa_final}{concentration parameter}
 \item{x_chain}{all new x generated}

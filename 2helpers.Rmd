@@ -19,7 +19,7 @@ get_Ap <- function(kappa, p = 2) {
     besselI(kappa, p/2 - 1, expon.scaled = TRUE)
 }
 
-#' Compute the score function s(eta, x) = x - E[X] for vMF.
+#' Compute the score function s(eta, x) for vMF.
 #' @param eta natural parameter vector (length p)
 #' @param x unit vector observation (length p)
 #' @param p space dimension (default = 2)
@@ -32,6 +32,25 @@ score_fn <- function(eta, x, p = 2) {
   x - expected
 }
 
+
+#' Fisher information matrix for the vMF model
+#'
+#' @param C  natural parameter vector (length p)
+#' @param p  dimension (defaults to length(C))
+#' @return   p x p Fisher information matrix
+#' @export
+get_FIM_vmf <- function(C, p = length(C)) {
+  kappa <- sqrt(sum(C^2))
+  I_p <- diag(p)
+  if (kappa < 1e-6) return(I_p / p)
+
+  mu <- C / kappa
+  Ap <- get_Ap(kappa, p)
+  Ap_prime <- 1 - Ap^2 - ((p - 1) / kappa) * Ap
+
+  mu_mu <- mu %*% t(mu)
+  Ap_prime * mu_mu + (Ap / kappa) * (I_p - mu_mu)
+}
 
 
 #' Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.
@@ -79,11 +98,10 @@ mle_vmf <- function(X){
 #' @param mu_ture,kappa_true true param
 #' @param B number of chains
 #' @param M number of iteration for each chain
-#' @param seed 
+#' @param seed for reproducability
 #' @param n_cores number of cores you can use
 #' @param save_all save data or not
 #' @return all the data with a summary we gonna used
-#' 
 #' @export
 sim_martingale_study <- function(n, n_sim = 500,
                                  mu_true = 2, kappa_true = 4,
