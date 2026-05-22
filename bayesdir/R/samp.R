@@ -89,7 +89,7 @@ run_predresamp_vmf <- function(X,B = 5000, M = 50, n_cores = 1,return_chains = F
   c0 <- mle_vmf(X)
   
   
-  chains <- pbmcapply::pbmclapply(1:B, function(b) {
+  chains <- parallel::mclapply(1:B, function(b) {
     run_single_martingale(c0 = c0, N = n, M = M, save_path = return_chains)
   }, mc.cores = n_cores)
   

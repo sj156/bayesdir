@@ -67,12 +67,15 @@ sim_compare_vmf <- function(n, n_sim = 100,
                             prior = list(c = 0, R0 = 0, mu0 = 0),
                             seed = 1234, n_cores = 1,
                             save_dir = "sim_results",
-                            save_interval = 1000) {
+                            save_interval = n_sim/5) {
   if (!dir.exists(save_dir)) {
     dir.create(save_dir, recursive = TRUE)
   }
   set.seed(seed)
   
+  pb <- txtProgressBar(min = 0, max = n_sim, style = 3, 
+                       label = "Simulation Progress: ")
+  start_time <- Sys.time()
 
   get_stats <- function(samples, true_val) {
     ci <- quantile(samples, probs = c(0.025, 0.975))
@@ -115,6 +118,8 @@ sim_compare_vmf <- function(n, n_sim = 100,
       time = t3 - t2
     )
     
+    setTxtProgressBar(pb, i)
+    
     if (i %% save_interval == 0) {
       temp_res <- list(
         mart = res_mart[1:i], 
@@ -124,7 +129,12 @@ sim_compare_vmf <- function(n, n_sim = 100,
       )
       file_name <- file.path(save_dir, paste0("backup_iter_", i, ".rds"))
       saveRDS(temp_res, file = file_name)
-      cat("  --> Intermediate results saved to:", file_name, "\n")
+      
+      message(sprintf("\n[Checkpoint] Saved at %s | Elapsed: %.1f mins | ETA: %.1f mins (Finish approx. %s)", 
+                format(Sys.time(), "%H:%M:%S"), 
+                as.numeric(difftime(Sys.time(), start_time, units = "mins")), 
+                (as.numeric(difftime(Sys.time(), start_time, units = "mins")) / i) * (n_sim - i), 
+                format(Sys.time() + ((as.numeric(difftime(Sys.time(), start_time, units = "secs")) /i) * (n_sim-i)), "%H:%M")))
     }
   }
 
@@ -142,7 +152,10 @@ sim_compare_vmf <- function(n, n_sim = 100,
       Max_Var_ka  = max(df$e_ka), 
       Mean_Time = mean(df$time)
     )
+  
   }
+  
+  close(pb)
 
   final_summary <- rbind(
     cbind(Method = "Martingale", summarize_res(df_mart)),
@@ -154,15 +167,19 @@ sim_compare_vmf <- function(n, n_sim = 100,
 ```
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
+setwd(".") ## folder to save file.
 nn_cores = max(detectCores() - 1 , 1)
 res500 <- sim_compare_vmf(n=500,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
-res200 <- sim_compare_vmf(n=200,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
-res100 <- sim_compare_vmf(n=100,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
-res10 <- sim_compare_vmf(n=10,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res500, file = "vmf_simulation_results500.RData")
 
-getwd()
-setwd("~/")
-save(res500, res200, res100, res10, file = "vmf_simulation_results.RData")
+res1000 <- sim_compare_vmf(n=1000,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res1000, file = "vmf_simulation_results1000.RData")
+
+res100 <- sim_compare_vmf(n=100,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res100, file = "vmf_simulation_results100.RData")
+
+res10 <- sim_compare_vmf(n=10,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res10, file = "vmf_simulation_results10.RData")
 
 ```
 
