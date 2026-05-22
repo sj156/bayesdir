@@ -88,9 +88,10 @@ run_predresamp_vmf <- function(X,B = 5000, M = 50, n_cores = 1,return_chains = F
   p  <- nrow(X)
   c0 <- mle_vmf(X)
   
-  chains <- mclapply(1:B, function(b) run_single_martingale(c0 = c0, N = n, M = M,save_path = return_chains),
-                     mc.cores = n_cores)
   
+  chains <- pbmcapply::pbmclapply(1:B, function(b) {
+    run_single_martingale(c0 = c0, N = n, M = M, save_path = return_chains)
+  }, mc.cores = n_cores)
   
   c_sam <- sapply(chains, `[[`, "c_final")
   kappa_sam <-sapply(chains,`[[`, "kappa_final")

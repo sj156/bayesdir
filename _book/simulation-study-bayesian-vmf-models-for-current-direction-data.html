@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="6 Simulation Study: Bayesian vMF models for current direction Data | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-21">
+<meta name="date" content="2026-05-22">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -121,7 +121,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li class="chapter" data-level="6.1" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sythetic-data-for-illustration-with-p2"><i class="fa fa-check"></i><b>6.1</b> Sythetic data for illustration with p=2</a></li>
 <li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#bayesian-inference-on-a-conjugate-prior."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior.</a></li>
-<li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#predictive-posterior-via-martingale."><i class="fa fa-check"></i><b>6.3</b> Predictive Posterior via Martingale.</a></li>
 </ul>
 </li>
 </ul></nav>
@@ -156,19 +155,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </h2>
 <p>Used as an benchmark. See Forbes &amp; Mardia (2015) by <span class="math inline">\(\texttt{circglmbayes}\)</span></p>
 <p>Here <span class="math inline">\(\mu \in [0,2\pi]\)</span> as an angle. <span class="math inline">\(\kappa \geq0\)</span> as concentration.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb12-1" tabindex="-1"></a>res_bayes30  <span class="ot">&lt;-</span> <span class="fu">sim_bayes_vm</span>(<span class="at">n =</span> <span class="dv">30</span>, <span class="at">n_sim =</span> <span class="dv">10</span>)</span>
-<span id="cb12-2"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb12-2" tabindex="-1"></a>res_bayes100 <span class="ot">&lt;-</span> <span class="fu">sim_bayes_vm</span>(<span class="at">n =</span> <span class="dv">100</span>, <span class="at">n_sim =</span> <span class="dv">10</span>)</span>
-<span id="cb12-3"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb12-3" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb12-4" tabindex="-1"></a>result_table <span class="ot">&lt;-</span> <span class="fu">rbind</span>(res_bayes10, res_bayes30, res_bayes100)</span>
-<span id="cb12-5"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#cb12-5" tabindex="-1"></a><span class="fu">print</span>(result_table, <span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div>
-</div>
-<div id="predictive-posterior-via-martingale." class="section level2 hasAnchor" number="6.3">
-<h2>
-<span class="header-section-number">6.3</span> Predictive Posterior via Martingale.<a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#predictive-posterior-via-martingale." class="anchor-section" aria-label="Anchor link to header"></a>
-</h2>
-<p>Score based martingale sampling without pre-conditioner (inverse info).</p>
-<p>For efficiency, hybrid trick is adopted.</p>
-<p>Simulation with n_sim = 5000, B = 5000, M = 50</p>
 
 </div>
 </div>

@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="2 Package setup | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-21">
+<meta name="date" content="2026-05-22">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -122,7 +122,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li class="chapter" data-level="6.1" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sythetic-data-for-illustration-with-p2"><i class="fa fa-check"></i><b>6.1</b> Sythetic data for illustration with p=2</a></li>
 <li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#bayesian-inference-on-a-conjugate-prior."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior.</a></li>
-<li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#predictive-posterior-via-martingale."><i class="fa fa-check"></i><b>6.3</b> Predictive Posterior via Martingale.</a></li>
 </ul>
 </li>
 </ul></nav>
@@ -178,16 +177,18 @@ the console.</p>
 <span id="cb6-5"><a href="package-setup.html#cb6-5" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"ggplot2"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
 <span id="cb6-6"><a href="package-setup.html#cb6-6" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"MASS"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
 <span id="cb6-7"><a href="package-setup.html#cb6-7" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"parallel"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
-<span id="cb6-8"><a href="package-setup.html#cb6-8" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"stats"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
-<span id="cb6-9"><a href="package-setup.html#cb6-9" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"rstiefel"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
-<span id="cb6-10"><a href="package-setup.html#cb6-10" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"tidyverse"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
-<span id="cb6-11"><a href="package-setup.html#cb6-11" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="package-setup.html#cb6-12" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_pipe</span>(<span class="at">export=</span><span class="cn">TRUE</span>)</span></code></pre></div>
+<span id="cb6-8"><a href="package-setup.html#cb6-8" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"pbmcapply"</span>,<span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-9"><a href="package-setup.html#cb6-9" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"stats"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-10"><a href="package-setup.html#cb6-10" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"rstiefel"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-11"><a href="package-setup.html#cb6-11" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_package</span>(<span class="st">"tidyverse"</span>, <span class="at">type =</span> <span class="st">"imports"</span>)</span>
+<span id="cb6-12"><a href="package-setup.html#cb6-12" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="package-setup.html#cb6-13" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">use_pipe</span>(<span class="at">export=</span><span class="cn">TRUE</span>)</span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="package-setup.html#cb7-1" tabindex="-1"></a><span class="co">#' @importFrom parallel mclapply</span></span>
 <span id="cb7-2"><a href="package-setup.html#cb7-2" tabindex="-1"></a><span class="co">#' @importFrom stats quantile rnorm sd uniroot</span></span>
 <span id="cb7-3"><a href="package-setup.html#cb7-3" tabindex="-1"></a><span class="co">#' @importFrom rstiefel rmf.vector</span></span>
-<span id="cb7-4"><a href="package-setup.html#cb7-4" tabindex="-1"></a><span class="co">#' @importFrom magrittr %&gt;%</span></span>
-<span id="cb7-5"><a href="package-setup.html#cb7-5" tabindex="-1"></a><span class="cn">NULL</span></span></code></pre></div>
+<span id="cb7-4"><a href="package-setup.html#cb7-4" tabindex="-1"></a><span class="co">#' @importFrom pbmcapply pbmclapply</span></span>
+<span id="cb7-5"><a href="package-setup.html#cb7-5" tabindex="-1"></a><span class="co">#' @importFrom magrittr %&gt;%</span></span>
+<span id="cb7-6"><a href="package-setup.html#cb7-6" tabindex="-1"></a><span class="cn">NULL</span></span></code></pre></div>
 <!-- library("tmvnsim") ## for tmvnsim -->
 <!-- library("MASS") ## for mvrnorm -->
 <!-- library("scatterplot3d") # for 3d plot  -->

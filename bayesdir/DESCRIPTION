@@ -14,8 +14,9 @@ Imports:
     magrittr,
     MASS,
     parallel,
+    pbmcapply,
     rstiefel,
     stats,
     tidyverse
 LitrVersionUsed: 0.9.3
-LitrId: ab4b0413f805c8e520e8d10c130e40b5
+LitrId: 35c5febe9efc39d2f6c6b5d4e748b789

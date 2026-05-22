@@ -7,11 +7,11 @@ library(bayesdir)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-## library(patchwork) ## for what? 
+library(patchwork) 
 library(RColorBrewer)
 library(rstiefel) 
-library(circular) ## for what? 
-library(circglmbayes) ## for what? 
+library(circular) ## for the coordinates in polar system 
+library(circglmbayes) ## for sampling kappa through mcmc method. 
 library(parallel)
 
 set.seed(20260509)
@@ -33,7 +33,7 @@ Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration.
 generate_vmf_data <- function(n, mu_true, kappa_true) {
   
   eta_true <- kappa_true * c(cos(mu_true), sin(mu_true))
-  raw_samples <- replicate(n, rstiefel::rmf.vector(eta_true))
+  raw_samples <- replicate(n, rstiefel::rmf.vector(eta_true))[,1,]
   X_cartesian <- matrix(raw_samples, nrow = 2, ncol = n)
   theta_rad <- atan2(X_cartesian[2, ], X_cartesian[1, ])
   list(X = X_cartesian, theta = theta_rad)
@@ -65,8 +65,12 @@ sim_compare_vmf <- function(n, n_sim = 100,
                             mu_true = 2, kappa_true = 4,
                             B = 5000, M = 50,
                             prior = list(c = 0, R0 = 0, mu0 = 0),
-                            seed = 1234, n_cores = 1) {
-  
+                            seed = 1234, n_cores = 1,
+                            save_dir = "sim_results",
+                            save_interval = 1000) {
+  if (!dir.exists(save_dir)) {
+    dir.create(save_dir, recursive = TRUE)
+  }
   set.seed(seed)
   
 
@@ -110,6 +114,18 @@ sim_compare_vmf <- function(n, n_sim = 100,
       c_ka = b_ka$cover, l_ka = b_ka$len, e_ka = b_ka$est,
       time = t3 - t2
     )
+    
+    if (i %% save_interval == 0) {
+      temp_res <- list(
+        mart = res_mart[1:i], 
+        bayes = res_bayes[1:i],
+        current_index = i,
+        params = list(n=n, mu_true=mu_true, kappa_true=kappa_true)
+      )
+      file_name <- file.path(save_dir, paste0("backup_iter_", i, ".rds"))
+      saveRDS(temp_res, file = file_name)
+      cat("  --> Intermediate results saved to:", file_name, "\n")
+    }
   }
 
   df_mart <- do.call(rbind, res_mart)

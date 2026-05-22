@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="3 Helpers functions | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-21">
+<meta name="date" content="2026-05-22">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -122,7 +122,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <ul>
 <li class="chapter" data-level="6.1" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#sythetic-data-for-illustration-with-p2"><i class="fa fa-check"></i><b>6.1</b> Sythetic data for illustration with p=2</a></li>
 <li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#bayesian-inference-on-a-conjugate-prior."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior.</a></li>
-<li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data.html#predictive-posterior-via-martingale."><i class="fa fa-check"></i><b>6.3</b> Predictive Posterior via Martingale.</a></li>
 </ul>
 </li>
 </ul></nav>
@@ -218,100 +217,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb9-15"><a href="helpers-functions.html#cb9-15" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (Rbar <span class="sc">&gt;</span> <span class="fl">0.999</span>) {</span>
 <span id="cb9-16"><a href="helpers-functions.html#cb9-16" tabindex="-1"></a>      kappa_hat <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> Rbar))</span>
 <span id="cb9-17"><a href="helpers-functions.html#cb9-17" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb9-18"><a href="helpers-functions.html#cb9-18" tabindex="-1"></a>      kappa_hat <span class="ot">&lt;-</span> <span class="fu">uniroot</span>(<span class="cf">function</span>(k) <a href="helpers-functions.html#get_Ap">get_Ap</a>(k, <span class="dv">2</span>) <span class="sc">-</span> Rbar, <span class="fu">c</span>(<span class="fl">0.001</span>, <span class="dv">100</span>))<span class="sc">$</span>root</span>
+<span id="cb9-18"><a href="helpers-functions.html#cb9-18" tabindex="-1"></a>      kappa_hat <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">uniroot</span>(<span class="cf">function</span>(k) <a href="helpers-functions.html#get_Ap">get_Ap</a>(k, <span class="dv">2</span>) <span class="sc">-</span> Rbar, <span class="fu">c</span>(<span class="fl">0.001</span>, <span class="dv">100</span>))<span class="sc">$</span>root</span>
 <span id="cb9-19"><a href="helpers-functions.html#cb9-19" tabindex="-1"></a>    }</span>
 <span id="cb9-20"><a href="helpers-functions.html#cb9-20" tabindex="-1"></a>  </span>
 <span id="cb9-21"><a href="helpers-functions.html#cb9-21" tabindex="-1"></a>  c_hat <span class="ot">&lt;-</span> kappa_hat <span class="sc">*</span> <span class="fu">c</span>(<span class="fu">cos</span>(mu_hat), <span class="fu">sin</span>(mu_hat))</span>
 <span id="cb9-22"><a href="helpers-functions.html#cb9-22" tabindex="-1"></a>  </span>
 <span id="cb9-23"><a href="helpers-functions.html#cb9-23" tabindex="-1"></a>  <span class="fu">return</span>(c_hat)</span>
-<span id="cb9-24"><a href="helpers-functions.html#cb9-24" tabindex="-1"></a>}</span>
-<span id="cb9-25"><a href="helpers-functions.html#cb9-25" tabindex="-1"></a></span>
-<span id="cb9-26"><a href="helpers-functions.html#cb9-26" tabindex="-1"></a></span>
-<span id="cb9-27"><a href="helpers-functions.html#cb9-27" tabindex="-1"></a><span class="co">#' functions for simulations study</span></span>
-<span id="cb9-28"><a href="helpers-functions.html#cb9-28" tabindex="-1"></a><span class="co">#' @param n sample size</span></span>
-<span id="cb9-29"><a href="helpers-functions.html#cb9-29" tabindex="-1"></a><span class="co">#' @param n_sim sim times</span></span>
-<span id="cb9-30"><a href="helpers-functions.html#cb9-30" tabindex="-1"></a><span class="co">#' @param mu_ture,kappa_true true param</span></span>
-<span id="cb9-31"><a href="helpers-functions.html#cb9-31" tabindex="-1"></a><span class="co">#' @param B number of chains</span></span>
-<span id="cb9-32"><a href="helpers-functions.html#cb9-32" tabindex="-1"></a><span class="co">#' @param M number of iteration for each chain</span></span>
-<span id="cb9-33"><a href="helpers-functions.html#cb9-33" tabindex="-1"></a><span class="co">#' @param seed for reproducability</span></span>
-<span id="cb9-34"><a href="helpers-functions.html#cb9-34" tabindex="-1"></a><span class="co">#' @param n_cores number of cores you can use</span></span>
-<span id="cb9-35"><a href="helpers-functions.html#cb9-35" tabindex="-1"></a><span class="co">#' @param save_all save data or not</span></span>
-<span id="cb9-36"><a href="helpers-functions.html#cb9-36" tabindex="-1"></a><span class="co">#' @return all the data with a summary we gonna used</span></span>
-<span id="cb9-37"><a href="helpers-functions.html#cb9-37" tabindex="-1"></a><span class="co">#' @export</span></span>
-<span id="cb9-38"><a href="helpers-functions.html#cb9-38" tabindex="-1"></a><span id="sim_martingale_study">sim_martingale_study</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(n, <span class="at">n_sim =</span> <span class="dv">500</span>,</span>
-<span id="cb9-39"><a href="helpers-functions.html#cb9-39" tabindex="-1"></a>                                 <span class="at">mu_true =</span> <span class="dv">2</span>, <span class="at">kappa_true =</span> <span class="dv">4</span>,</span>
-<span id="cb9-40"><a href="helpers-functions.html#cb9-40" tabindex="-1"></a>                                 <span class="at">B =</span> <span class="dv">5000</span>,<span class="at">M =</span> <span class="dv">50</span>,</span>
-<span id="cb9-41"><a href="helpers-functions.html#cb9-41" tabindex="-1"></a>                                 <span class="at">seed =</span> <span class="dv">1234</span>,</span>
-<span id="cb9-42"><a href="helpers-functions.html#cb9-42" tabindex="-1"></a>                                 <span class="at">n_cores =</span> <span class="dv">1</span>,</span>
-<span id="cb9-43"><a href="helpers-functions.html#cb9-43" tabindex="-1"></a>                                 <span class="at">save_all =</span> <span class="cn">FALSE</span>) {</span>
-<span id="cb9-44"><a href="helpers-functions.html#cb9-44" tabindex="-1"></a></span>
-<span id="cb9-45"><a href="helpers-functions.html#cb9-45" tabindex="-1"></a>  <span class="fu">RNGkind</span>(<span class="st">"L'Ecuyer-CMRG"</span>)</span>
-<span id="cb9-46"><a href="helpers-functions.html#cb9-46" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
-<span id="cb9-47"><a href="helpers-functions.html#cb9-47" tabindex="-1"></a>  </span>
-<span id="cb9-48"><a href="helpers-functions.html#cb9-48" tabindex="-1"></a>  <span class="co"># ---- Storage ----</span></span>
-<span id="cb9-49"><a href="helpers-functions.html#cb9-49" tabindex="-1"></a>  cover_mu <span class="ot">&lt;-</span> cover_kappa <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n_sim)</span>
-<span id="cb9-50"><a href="helpers-functions.html#cb9-50" tabindex="-1"></a>  len_mu <span class="ot">&lt;-</span> len_kappa <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n_sim)</span>
-<span id="cb9-51"><a href="helpers-functions.html#cb9-51" tabindex="-1"></a>  mean_mu_vec <span class="ot">&lt;-</span> mean_kappa_vec <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n_sim)</span>
-<span id="cb9-52"><a href="helpers-functions.html#cb9-52" tabindex="-1"></a>  times <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n_sim)</span>
-<span id="cb9-53"><a href="helpers-functions.html#cb9-53" tabindex="-1"></a>  <span class="cf">if</span> (save_all) {results <span class="ot">&lt;-</span> <span class="fu">vector</span>(<span class="st">"list"</span>, n_sim)}</span>
-<span id="cb9-54"><a href="helpers-functions.html#cb9-54" tabindex="-1"></a>  </span>
-<span id="cb9-55"><a href="helpers-functions.html#cb9-55" tabindex="-1"></a>  eta_true <span class="ot">&lt;-</span> kappa_true <span class="sc">*</span> <span class="fu">c</span>(<span class="fu">cos</span>(mu_true), <span class="fu">sin</span>(mu_true))</span>
-<span id="cb9-56"><a href="helpers-functions.html#cb9-56" tabindex="-1"></a>  </span>
-<span id="cb9-57"><a href="helpers-functions.html#cb9-57" tabindex="-1"></a>  </span>
-<span id="cb9-58"><a href="helpers-functions.html#cb9-58" tabindex="-1"></a>  <span class="co"># ---- Simulation loop ----</span></span>
-<span id="cb9-59"><a href="helpers-functions.html#cb9-59" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_sim) {</span>
-<span id="cb9-60"><a href="helpers-functions.html#cb9-60" tabindex="-1"></a>    <span class="co"># Generate observations</span></span>
-<span id="cb9-61"><a href="helpers-functions.html#cb9-61" tabindex="-1"></a>    X <span class="ot">&lt;-</span> <span class="fu">replicate</span>(n,rstiefel<span class="sc">::</span><span class="fu">rmf.vector</span>(eta_true))</span>
-<span id="cb9-62"><a href="helpers-functions.html#cb9-62" tabindex="-1"></a>    </span>
-<span id="cb9-63"><a href="helpers-functions.html#cb9-63" tabindex="-1"></a>    </span>
-<span id="cb9-64"><a href="helpers-functions.html#cb9-64" tabindex="-1"></a>    <span class="co"># Run B independent chains</span></span>
-<span id="cb9-65"><a href="helpers-functions.html#cb9-65" tabindex="-1"></a>    t0 <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()[<span class="dv">3</span>]</span>
-<span id="cb9-66"><a href="helpers-functions.html#cb9-66" tabindex="-1"></a>    chains<span class="ot">&lt;-</span> <a href="predictive-resampler.html#run_predresamp_vmf">run_predresamp_vmf</a>(X, <span class="at">B =</span> <span class="dv">5000</span>, <span class="at">M=</span><span class="dv">50</span>,<span class="at">n_cores =</span> n_cores,</span>
-<span id="cb9-67"><a href="helpers-functions.html#cb9-67" tabindex="-1"></a>                                <span class="at">return_chains =</span> save_all)</span>
-<span id="cb9-68"><a href="helpers-functions.html#cb9-68" tabindex="-1"></a>    t1 <span class="ot">&lt;-</span> <span class="fu">proc.time</span>()[<span class="dv">3</span>]</span>
-<span id="cb9-69"><a href="helpers-functions.html#cb9-69" tabindex="-1"></a>    times[i] <span class="ot">&lt;-</span> t1 <span class="sc">-</span> t0</span>
-<span id="cb9-70"><a href="helpers-functions.html#cb9-70" tabindex="-1"></a>    </span>
-<span id="cb9-71"><a href="helpers-functions.html#cb9-71" tabindex="-1"></a>    <span class="co"># Extract samples</span></span>
-<span id="cb9-72"><a href="helpers-functions.html#cb9-72" tabindex="-1"></a>    sample_list <span class="ot">&lt;-</span> chains<span class="sc">$</span>sample</span>
-<span id="cb9-73"><a href="helpers-functions.html#cb9-73" tabindex="-1"></a>    </span>
-<span id="cb9-74"><a href="helpers-functions.html#cb9-74" tabindex="-1"></a>    mu_sam <span class="ot">&lt;-</span> sample_list<span class="sc">$</span>mu_sam</span>
-<span id="cb9-75"><a href="helpers-functions.html#cb9-75" tabindex="-1"></a>    kappa_sam <span class="ot">&lt;-</span> sample_list<span class="sc">$</span>kappa_sam</span>
-<span id="cb9-76"><a href="helpers-functions.html#cb9-76" tabindex="-1"></a>    </span>
-<span id="cb9-77"><a href="helpers-functions.html#cb9-77" tabindex="-1"></a>    mean_mu_vec[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(mu_sam)</span>
-<span id="cb9-78"><a href="helpers-functions.html#cb9-78" tabindex="-1"></a>    mean_kappa_vec[i] <span class="ot">&lt;-</span> <span class="fu">mean</span>(kappa_sam)</span>
-<span id="cb9-79"><a href="helpers-functions.html#cb9-79" tabindex="-1"></a>    </span>
-<span id="cb9-80"><a href="helpers-functions.html#cb9-80" tabindex="-1"></a>    <span class="co"># 95% credible intervals for mu and kappa</span></span>
-<span id="cb9-81"><a href="helpers-functions.html#cb9-81" tabindex="-1"></a>    ci_mu <span class="ot">&lt;-</span> <span class="fu">quantile</span>(mu_sam, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
-<span id="cb9-82"><a href="helpers-functions.html#cb9-82" tabindex="-1"></a>    cover_mu[i] <span class="ot">&lt;-</span> (mu_true <span class="sc">&gt;=</span> ci_mu[<span class="dv">1</span>] <span class="sc">&amp;&amp;</span> mu_true <span class="sc">&lt;=</span> ci_mu[<span class="dv">2</span>])</span>
-<span id="cb9-83"><a href="helpers-functions.html#cb9-83" tabindex="-1"></a>    len_mu[i] <span class="ot">&lt;-</span> ci_mu[<span class="dv">2</span>] <span class="sc">-</span> ci_mu[<span class="dv">1</span>]</span>
-<span id="cb9-84"><a href="helpers-functions.html#cb9-84" tabindex="-1"></a>    </span>
-<span id="cb9-85"><a href="helpers-functions.html#cb9-85" tabindex="-1"></a>    ci_kappa <span class="ot">&lt;-</span> <span class="fu">quantile</span>(kappa_sam, <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
-<span id="cb9-86"><a href="helpers-functions.html#cb9-86" tabindex="-1"></a>    cover_kappa[i] <span class="ot">&lt;-</span> (kappa_true <span class="sc">&gt;=</span> ci_kappa[<span class="dv">1</span>]) <span class="sc">&amp;</span> (kappa_true <span class="sc">&lt;=</span> ci_kappa[<span class="dv">2</span>])</span>
-<span id="cb9-87"><a href="helpers-functions.html#cb9-87" tabindex="-1"></a>    len_kappa[i] <span class="ot">&lt;-</span> ci_kappa[<span class="dv">2</span>] <span class="sc">-</span> ci_kappa[<span class="dv">1</span>]</span>
-<span id="cb9-88"><a href="helpers-functions.html#cb9-88" tabindex="-1"></a>    </span>
-<span id="cb9-89"><a href="helpers-functions.html#cb9-89" tabindex="-1"></a>    <span class="cf">if</span> (save_all) {results[[i]]<span class="ot">&lt;-</span> chains}</span>
-<span id="cb9-90"><a href="helpers-functions.html#cb9-90" tabindex="-1"></a>    </span>
-<span id="cb9-91"><a href="helpers-functions.html#cb9-91" tabindex="-1"></a>  }</span>
-<span id="cb9-92"><a href="helpers-functions.html#cb9-92" tabindex="-1"></a>  </span>
-<span id="cb9-93"><a href="helpers-functions.html#cb9-93" tabindex="-1"></a>  <span class="co"># ---- Build output table ----</span></span>
-<span id="cb9-94"><a href="helpers-functions.html#cb9-94" tabindex="-1"></a>  summarys <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb9-95"><a href="helpers-functions.html#cb9-95" tabindex="-1"></a>    <span class="at">n =</span> n,</span>
-<span id="cb9-96"><a href="helpers-functions.html#cb9-96" tabindex="-1"></a>    <span class="at">Coverage_mu =</span> <span class="fu">mean</span>(cover_mu) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb9-97"><a href="helpers-functions.html#cb9-97" tabindex="-1"></a>    <span class="at">Length_mu =</span> <span class="fu">mean</span>(len_mu),</span>
-<span id="cb9-98"><a href="helpers-functions.html#cb9-98" tabindex="-1"></a>    <span class="at">Coverage_kappa =</span> <span class="fu">mean</span>(cover_kappa) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb9-99"><a href="helpers-functions.html#cb9-99" tabindex="-1"></a>    <span class="at">Length_kappa =</span> <span class="fu">mean</span>(len_kappa),</span>
-<span id="cb9-100"><a href="helpers-functions.html#cb9-100" tabindex="-1"></a>    <span class="at">Mean_SE_mu      =</span> <span class="fu">sd</span>(mean_mu_vec),</span>
-<span id="cb9-101"><a href="helpers-functions.html#cb9-101" tabindex="-1"></a>    <span class="at">Mean_SE_kappa   =</span> <span class="fu">sd</span>(mean_kappa_vec),</span>
-<span id="cb9-102"><a href="helpers-functions.html#cb9-102" tabindex="-1"></a>    <span class="at">Mean_Time =</span> <span class="fu">mean</span>(times)</span>
-<span id="cb9-103"><a href="helpers-functions.html#cb9-103" tabindex="-1"></a>  )</span>
-<span id="cb9-104"><a href="helpers-functions.html#cb9-104" tabindex="-1"></a>  </span>
-<span id="cb9-105"><a href="helpers-functions.html#cb9-105" tabindex="-1"></a>  <span class="cf">if</span> (save_all) {</span>
-<span id="cb9-106"><a href="helpers-functions.html#cb9-106" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">summary =</span> summarys, <span class="at">data_all =</span> results)</span>
-<span id="cb9-107"><a href="helpers-functions.html#cb9-107" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb9-108"><a href="helpers-functions.html#cb9-108" tabindex="-1"></a>    summarys</span>
-<span id="cb9-109"><a href="helpers-functions.html#cb9-109" tabindex="-1"></a>  }</span>
-<span id="cb9-110"><a href="helpers-functions.html#cb9-110" tabindex="-1"></a>}</span>
-<span id="cb9-111"><a href="helpers-functions.html#cb9-111" tabindex="-1"></a></span></code></pre></div>
+<span id="cb9-24"><a href="helpers-functions.html#cb9-24" tabindex="-1"></a>}</span></code></pre></div>
 
 </div>
             </section>
