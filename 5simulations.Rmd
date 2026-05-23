@@ -66,7 +66,7 @@ sim_compare_vmf <- function(n, n_sim = 100,
                             B = 5000, M = 50,
                             prior = list(c = 0, R0 = 0, mu0 = 0),
                             seed = 1234, n_cores = 1,
-                            save_dir = "sim_results",
+                            save_dir = "single_sim_results",
                             save_interval = n_sim/5) {
   if (!dir.exists(save_dir)) {
     dir.create(save_dir, recursive = TRUE)
@@ -149,7 +149,7 @@ sim_compare_vmf <- function(n, n_sim = 100,
       Max_Var_mu  = max(df$e_mu),  
       Cov_ka  = mean(df$c_ka) * 100,
       Len_ka  = mean(df$l_ka),
-      Max_Var_ka  = max(df$e_ka), 
+      Max_Var_ka  = mean(df$e_ka), 
       Mean_Time = mean(df$time)
     )
   
@@ -168,18 +168,37 @@ sim_compare_vmf <- function(n, n_sim = 100,
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
 setwd(".") ## folder to save file.
-nn_cores = max(detectCores() - 1 , 1)
-res500 <- sim_compare_vmf(n=500,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
-save(res500, file = "vmf_simulation_results500.RData")
 
-res1000 <- sim_compare_vmf(n=1000,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
-save(res1000, file = "vmf_simulation_results1000.RData")
+n_cores <- max(detectCores() - 1, 1)
+n_sim <- 5000
+B       <- 5000                  
+mu_true <- 2
+kappa_true <- 4
+save_dir <- "results"
+if (!dir.exists(save_dir)) dir.create(save_dir)
 
-res100 <- sim_compare_vmf(n=100,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
-save(res100, file = "vmf_simulation_results100.RData")
+grid <- expand.grid(
+  n = c(10, 100, 500),
+  m = c(20, 50, 100, 500, 1000, 4000)
+)
 
-res10 <- sim_compare_vmf(n=10,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
-save(res10, file = "vmf_simulation_results10.RData")
+
+for (i in seq_len(nrow(grid))) {
+  nn <- grid$n[i]
+  mm <- grid$m[i]
+  
+  cat(sprintf("\n====== n = %d, m = %d (λ = %.2f) ======\n", nn, mm, mm/nn))
+  
+  res <- sim_compare_vmf(
+    n = nn, n_sim = n_sim, B = B, M = mm,
+    mu_true = mu_true, kappa_true = kappa_true,
+    n_cores = n_cores
+  )
+
+  fname <- file.path(save_dir, paste0("res_n", nn, "_m", mm, ".rds"))
+  saveRDS(res, file = fname)
+  cat(sprintf("Results saved to %s\n", fname))
+}
 
 ```
 
