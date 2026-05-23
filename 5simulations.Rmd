@@ -61,144 +61,200 @@ fit_mcmc_vmf <- function(theta, prior, n_iter = 10000, burn = 5000) {
 
 
 
-sim_compare_vmf <- function(n, n_sim = 100,
-                            mu_true = 2, kappa_true = 4,
-                            B = 5000, M = 50,
-                            prior = list(c = 0, R0 = 0, mu0 = 0),
-                            seed = 1234, n_cores = 1,
-                            save_dir = "single_sim_results",
-                            save_interval = n_sim/5) {
+sim_one_round <- function(n, mu_true, kappa_true, m_vals, B, prior,
+                          n_cores, seed_offset) {
+  set.seed(seed_offset)
+  data <- generate_vmf_data(n, mu_true, kappa_true)
+
+  
+  t0 <- proc.time()[3]
+  b_samples <- fit_mcmc_vmf(data$theta, prior, n_iter = B + 5000, burn = 5000)
+  t1 <- proc.time()[3]
+  stats_mcmc_mu <- get_stats(b_samples[, "mu"], mu_true)
+  stats_mcmc_ka <- get_stats(b_samples[, "kappa"], kappa_true)
+  mcmc_time <- t1 - t0
+
+  
+  mart_res <- lapply(m_vals, function(m) {
+    t2 <- proc.time()[3]
+    chains <- run_predresamp_vmf(data$X, B = B, M = m, n_cores = n_cores)
+    t3 <- proc.time()[3]
+    mu_sam <- chains$sample$mu_sam
+    ka_sam <- chains$sample$kappa_sam
+    list(
+      mu = get_stats(mu_sam, mu_true),
+      ka = get_stats(ka_sam, kappa_true),
+      time = t3 - t2
+    )
+  })
+  
+  list(
+    mcmc = list(mu = stats_mcmc_mu, ka = stats_mcmc_ka, time = mcmc_time),
+    mart = mart_res
+  )
+}
+
+
+
+run_simulation_study <- function(n, m_vals, n_sim = 500, B = 2000,
+                                 mu_true = 2, kappa_true = 4,
+                                 prior = list(c = 0, R0 = 0, mu0 = 0),
+                                 n_cores = 1, seed = 2026,
+                                 save_dir = “single_n_simulation”,       
+                                 save_interval = n_sim/5) {  
+  
   if (!dir.exists(save_dir)) {
     dir.create(save_dir, recursive = TRUE)
   }
-  set.seed(seed)
+  n_m <- length(m_vals)
+  start_time <- Sys.time() 
+
   
-  pb <- txtProgressBar(min = 0, max = n_sim, style = 3, 
-                       label = "Simulation Progress: ")
-  start_time <- Sys.time()
+  mcmc_mu_cover <- mcmc_ka_cover <- 0
+  mcmc_mu_len <- mcmc_ka_len <- 0
+  mcmc_mu_var <- mcmc_ka_var <- 0
+  mcmc_time <- 0
 
-  get_stats <- function(samples, true_val) {
-    ci <- quantile(samples, probs = c(0.025, 0.975))
-    list(
-      cover = as.numeric(true_val >= ci[1] && true_val <= ci[2]),
-      len = as.numeric(ci[2] - ci[1]),
-      est = var(samples) 
-    )
-  }
+  mart_mu_cover <- mart_ka_cover <- rep(0, n_m)
+  mart_mu_len <- mart_ka_len <- rep(0, n_m)
+  mart_mu_var <- mart_ka_var <- rep(0, n_m)
+  mart_time <- rep(0, n_m)
 
-  res_mart <- vector("list", n_sim)
-  res_bayes <- vector("list", n_sim)
+  
+  res_list_mcmc <- vector("list", n_sim)
+  res_list_mart <- vector("list", n_sim)
 
+  
+  pb <- txtProgressBar(min = 0, max = n_sim, style = 3, width = 50, char = "=")
+
+  
   for (i in 1:n_sim) {
-    data <- generate_vmf_data(n, mu_true, kappa_true)
     
-    t0 <- proc.time()[3]
-    m_chains <- run_predresamp_vmf(data$X, B = B, M = M, n_cores = n_cores)
-    t1 <- proc.time()[3]
-    
-    m_mu <- get_stats(m_chains$sample$mu_sam, mu_true)
-    m_ka <- get_stats(m_chains$sample$kappa_sam, kappa_true)
-    
-    res_mart[[i]] <- data.frame(
-      c_mu = m_mu$cover, l_mu = m_mu$len, e_mu = m_mu$est,
-      c_ka = m_ka$cover, l_ka = m_ka$len, e_ka = m_ka$est,
-      time = t1 - t0
-    )
+    res <- sim_one_round(n, mu_true, kappa_true, m_vals, B, prior,
+                         n_cores = n_cores, seed_offset = seed + i)
 
-    t2 <- proc.time()[3]
-    b_samples <- fit_mcmc_vmf(data$theta, prior, n_iter = B+5000, burn=5000)
-    t3 <- proc.time()[3]
+  
+    res_list_mcmc[[i]] <- res$mcmc
+    res_list_mart[[i]] <- res$mart
+
     
-    b_mu <- get_stats(b_samples[, "mu"], mu_true)
-    b_ka <- get_stats(b_samples[, "kappa"], kappa_true)
+    mcmc_mu_cover <- mcmc_mu_cover + res$mcmc$mu$cover
+    mcmc_ka_cover <- mcmc_ka_cover + res$mcmc$ka$cover
+    mcmc_mu_len   <- mcmc_mu_len   + res$mcmc$mu$len
+    mcmc_ka_len   <- mcmc_ka_len   + res$mcmc$ka$len
+    mcmc_mu_var   <- mcmc_mu_var   + res$mcmc$mu$var
+    mcmc_ka_var   <- mcmc_ka_var   + res$mcmc$ka$var
+    mcmc_time     <- mcmc_time     + res$mcmc$time
+
     
-    res_bayes[[i]] <- data.frame(
-      c_mu = b_mu$cover, l_mu = b_mu$len, e_mu = b_mu$est,
-      c_ka = b_ka$cover, l_ka = b_ka$len, e_ka = b_ka$est,
-      time = t3 - t2
-    )
-    
+    for (j in 1:n_m) {
+      mart_mu_cover[j] <- mart_mu_cover[j] + res$mart[[j]]$mu$cover
+      mart_ka_cover[j] <- mart_ka_cover[j] + res$mart[[j]]$ka$cover
+      mart_mu_len[j]   <- mart_mu_len[j]   + res$mart[[j]]$mu$len
+      mart_ka_len[j]   <- mart_ka_len[j]   + res$mart[[j]]$ka$len
+      mart_mu_var[j]   <- mart_mu_var[j]   + res$mart[[j]]$mu$var
+      mart_ka_var[j]   <- mart_ka_var[j]   + res$mart[[j]]$ka$var
+      mart_time[j]     <- mart_time[j]     + res$mart[[j]]$time
+    }
+
     setTxtProgressBar(pb, i)
     
-    if (i %% save_interval == 0) {
+    
+    if (!is.null(save_dir) && (i %% save_interval == 0)) {
+      if (!dir.exists(save_dir)) dir.create(save_dir, recursive = TRUE)
+      
       temp_res <- list(
-        mart = res_mart[1:i], 
-        bayes = res_bayes[1:i],
+        mart_history = res_list_mart[1:i], 
+        mcmc_history = res_list_mcmc[1:i],
         current_index = i,
-        params = list(n=n, mu_true=mu_true, kappa_true=kappa_true)
+        params = list(n=n, mu_true=mu_true, kappa_true=kappa_true, m_vals=m_vals)
       )
+      
       file_name <- file.path(save_dir, paste0("backup_iter_", i, ".rds"))
       saveRDS(temp_res, file = file_name)
       
-      message(sprintf("\n[Checkpoint] Saved at %s | Elapsed: %.1f mins | ETA: %.1f mins (Finish approx. %s)", 
-                format(Sys.time(), "%H:%M:%S"), 
-                as.numeric(difftime(Sys.time(), start_time, units = "mins")), 
-                (as.numeric(difftime(Sys.time(), start_time, units = "mins")) / i) * (n_sim - i), 
-                format(Sys.time() + ((as.numeric(difftime(Sys.time(), start_time, units = "secs")) /i) * (n_sim-i)), "%H:%M")))
+      
+      cur_time <- Sys.time()
+      elapsed <- as.numeric(difftime(cur_time, start_time, units = "mins"))
+      avg_time <- elapsed / i
+      eta <- avg_time * (n_sim - i)
+      
+      message(sprintf("\n[Checkpoint] Saved at %s | Elapsed: %.1f min | ETA: %.1f min (Finish at %s)", 
+                      format(cur_time, "%H:%M:%S"), 
+                      elapsed, 
+                      eta, 
+                      format(cur_time + eta * 60, "%H:%M")))
     }
   }
 
-  df_mart <- do.call(rbind, res_mart)
-  df_bayes <- do.call(rbind, res_bayes)
-
-  summarize_res <- function(df) {
-    data.frame(
-      n = n,
-      Cov_mu  = mean(df$c_mu) * 100,
-      Len_mu  = mean(df$l_mu),
-      Max_Var_mu  = max(df$e_mu),  
-      Cov_ka  = mean(df$c_ka) * 100,
-      Len_ka  = mean(df$l_ka),
-      Max_Var_ka  = mean(df$e_ka), 
-      Mean_Time = mean(df$time)
-    )
-  
-  }
-  
   close(pb)
 
-  final_summary <- rbind(
-    cbind(Method = "Martingale", summarize_res(df_mart)),
-    cbind(Method = "BayesMCMC", summarize_res(df_bayes))
+  
+  mcmc_row <- data.frame(
+    n = n, m = NA, lambda = NA, rho = NA,
+    Method = "MCMC",
+    Cov_mu  = 100 * mcmc_mu_cover / n_sim,
+    Len_mu  = mcmc_mu_len / n_sim,
+    Cov_ka  = 100 * mcmc_ka_cover / n_sim,
+    Len_ka  = mcmc_ka_len / n_sim,
+    Var_mu  = mcmc_mu_var / n_sim,
+    Var_ka  = mcmc_ka_var / n_sim,
+    Time    = mcmc_time / n_sim
   )
 
-  return(final_summary)
+  mart_rows <- do.call(rbind, lapply(1:n_m, function(j) {
+    m <- m_vals[j]
+    lambda <- m / n
+    rho <- 1 - 1 / (1 + lambda)
+    data.frame(
+      n = n, m = m, lambda = lambda, rho = rho,
+      Method = "Martingale",
+      Cov_mu  = 100 * mart_mu_cover[j] / n_sim,
+      Len_mu  = mart_mu_len[j] / n_sim,
+      Cov_ka  = 100 * mart_ka_cover[j] / n_sim,
+      Len_ka  = mart_ka_len[j] / n_sim,
+      Var_mu  = mart_mu_var[j] / n_sim,
+      Var_ka  = mart_ka_var[j] / n_sim,
+      Time    = mart_time[j] / n_sim
+    )
+  }))
+
+  return(rbind(mcmc_row, mart_rows))
 }
+
+
 ```
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-setwd(".") ## folder to save file.
 
-n_cores <- max(detectCores() - 1, 1)
-n_sim <- 5000
-B       <- 5000                  
-mu_true <- 2
-kappa_true <- 4
-save_dir <- "results"
-if (!dir.exists(save_dir)) dir.create(save_dir)
+set.seed(1234)
+n_cores <- max(1, detectCores() - 1)
+n_sim   <- 2000   
 
-grid <- expand.grid(
-  n = c(10, 100, 500),
-  m = c(20, 50, 100, 500, 1000, 4000)
+
+grid_def <- list(
+  "100" = c(20, 50, 100, 200, 500, 2000),
+  "400" = c(40, 200, 400, 1000, 4000)
 )
 
-
-for (i in seq_len(nrow(grid))) {
-  nn <- grid$n[i]
-  mm <- grid$m[i]
-  
-  cat(sprintf("\n====== n = %d, m = %d (λ = %.2f) ======\n", nn, mm, mm/nn))
-  
-  res <- sim_compare_vmf(
-    n = nn, n_sim = n_sim, B = B, M = mm,
-    mu_true = mu_true, kappa_true = kappa_true,
-    n_cores = n_cores
+all_results <- list()
+for (n_str in names(grid_def)) {
+  n <- as.numeric(n_str)
+  m_vals <- grid_def[[n_str]]
+  cat(sprintf("\n===== Running n = %d =====\n", n))
+  res <- run_simulation_study(
+    n = n, m_vals = m_vals, n_sim = n_sim,
+    B = 2000, n_cores = n_cores
   )
-
-  fname <- file.path(save_dir, paste0("res_n", nn, "_m", mm, ".rds"))
-  saveRDS(res, file = fname)
-  cat(sprintf("Results saved to %s\n", fname))
+  all_results[[n_str]] <- res
+  saveRDS(res, file = paste0("results_n", n, ".rds"))
 }
 
+
+final_table <- do.call(rbind, all_results)
+saveRDS(final_table, "final_simulation_summary.rds")
+write.csv(final_table, "final_simulation_summary.csv", row.names = FALSE)
+
+print(final_table)
 ```
 
