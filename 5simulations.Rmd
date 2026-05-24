@@ -304,8 +304,8 @@ plot_trace_sideways_density <- function(
     n_pos = "bottomright",
     n_cex = 0.8,
     n_col = "gray40",
-    n_pad_x = 0.02,   # 相对绘图宽度的向左偏移比例
-    n_pad_y = 0.03    # 相对绘图高度的向上偏移比例
+    n_pad_x = 0.02,   
+    n_pad_y = 0.03    
 ) {
   if (!is.matrix(paths)) paths <- as.matrix(paths)
   if (!is.numeric(paths)) stop("`paths` must be numeric.")
@@ -390,7 +390,7 @@ plot_trace_sideways_density <- function(
     points(init_x, init_y, col = initial_col, pch = initial_pch, cex = initial_cex)
   }
 
-  # 样本量 N 标注（带微调偏移）
+  
   if (!is.null(n_value)) {
     usr <- par("usr")   # c(xmin, xmax, ymin, ymax)
     x_range <- usr[2] - usr[1]
