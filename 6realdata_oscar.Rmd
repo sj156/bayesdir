@@ -1,0 +1,793 @@
+# OSCAR real-data application
+
+This vignette reproduces the real-data results used in the OSCAR southern
+offshore compact application: the numerical summary table, the post-corrected
+trace-and-terminal-density figure, and the two-panel rose/density figure.  The
+analysis uses the vMF predictive-resampling functions in our package; the
+small helper routines below only store full trajectories and produce the paper
+figures.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center"
+)
+
+set.seed(2026)
+```
+
+```{r packages}
+library(ggplot2)
+library(cowplot)
+library(parallel)
+library(rstiefel)
+
+load_bayesdir_functions <- function() {
+  e <- new.env(parent = emptyenv())
+
+  if (requireNamespace("bayesdir", quietly = TRUE)) {
+    e$get_Ap <- bayesdir::get_Ap
+    e$score_fn <- bayesdir::score_fn
+    e$get_FIM_vmf <- bayesdir::get_FIM_vmf
+    e$mle_vmf <- bayesdir::mle_vmf
+    e$run_predresamp_vmf <- bayesdir::run_predresamp_vmf
+    return(e)
+  }
+
+  # Fallback for rendering from the repository root before installing the package.
+  source_files <- c("bayesdir/R/all-helpers.R", "bayesdir/R/samp.R")
+  if (!all(file.exists(source_files))) {
+    stop(
+      "Install bayesdir or render this file from the repository root so that ",
+      "bayesdir/R/all-helpers.R and bayesdir/R/samp.R are available."
+    )
+  }
+  for (f in source_files) source(f, local = e)
+  e
+}
+
+.bd <- load_bayesdir_functions()
+```
+
+## Data and tuning
+
+The two CSV files contains the preprocessed compact subarea observations
+for summer and winter, with columns `y1` and `y2` giving unit current-direction
+vectors after rotation to the common reference direction.  For local testing,
+the code also searches the experiment folder used to prepare the paper figures.
+
+```{r paths-and-controls}
+plan_key <- "southern_offshore_compact"
+
+data_dir_candidates <- c(
+  file.path("data", "oscar_southern_offshore_compact"),
+  file.path("..", "..", "real-data", "spatial_rotation", "reprepared",
+            "selected_plan_data", plan_key)
+)
+
+data_dir <- data_dir_candidates[file.exists(file.path(data_dir_candidates, "summer_subarea.csv"))][1]
+if (is.na(data_dir)) {
+  stop("Cannot find summer_subarea.csv. Please place the OSCAR compact subarea data in data/oscar_southern_offshore_compact/.")
+}
+
+figure_dir <- file.path("figure", "oscar-real-data")
+dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+
+results_rds <- file.path(figure_dir, paste0(plan_key, "_raw_and_postcorrect_results.rds"))
+paper_results_rds <- file.path(
+  "..", "..", "real-data", "spatial_rotation", "reprepared",
+  "southern_offshore_compact_postcorrect_figures",
+  paste0(plan_key, "_raw_and_postcorrect_results.rds")
+)
+
+quick_mode <- TRUE
+nmc <- if (quick_mode) 1200 else 3000
+n_chains <- if (quick_mode) 800 else 5000
+trace_show <- if (quick_mode) 150 else 250
+detected_cores <- parallel::detectCores()
+n_cores <- if (is.na(detected_cores)) 1 else max(1, detected_cores - 1)
+
+# Set to TRUE to rerun predictive resampling even if a cached result file exists.
+rerun_mps <- FALSE
+
+rose_bins <- 36
+rose_inner_radius <- 0.28
+```
+
+## Helper functions
+
+```{r helpers}
+unit_matrix <- function(df) {
+  t(as.matrix(df[, c("y1", "y2")]))
+}
+
+obs_matrix <- function(X) {
+  t(X)
+}
+
+angle_to_signed_degrees <- function(theta) {
+  out <- theta * 180 / pi
+  ((out + 180) %% 360) - 180
+}
+
+fit_vmf <- function(X) {
+  c_hat <- as.numeric(.bd$mle_vmf(X))
+  kappa_hat <- sqrt(sum(c_hat^2))
+  mu_hat <- if (kappa_hat > 0) c_hat / kappa_hat else rep(0, length(c_hat))
+  x_bar <- rowMeans(X)
+  R_bar <- sqrt(sum(x_bar^2))
+
+  list(
+    mu_hat = mu_hat,
+    kappa_hat = kappa_hat,
+    c_hat = c_hat,
+    R_bar = R_bar,
+    x_bar = x_bar
+  )
+}
+
+extract_posterior <- function(c_array) {
+  n_iter <- dim(c_array)[1]
+  c_terminal <- t(c_array[n_iter, , ])
+  kappa <- sqrt(rowSums(c_terminal^2))
+  phi <- atan2(c_terminal[, 2], c_terminal[, 1])
+  data.frame(
+    c1 = c_terminal[, 1],
+    c2 = c_terminal[, 2],
+    kappa = kappa,
+    phi_rad = phi,
+    phi_deg = angle_to_signed_degrees(phi)
+  )
+}
+
+make_summary <- function(post, mle, N, season, posterior_label) {
+  data.frame(
+    Posterior = posterior_label,
+    Season = season,
+    N = N,
+    R_bar = round(mle$R_bar, 4),
+    kappa_MLE = round(mle$kappa_hat, 4),
+    kappa_mean = round(mean(post$kappa), 4),
+    kappa_sd = round(sd(post$kappa), 4),
+    kappa_q025 = round(quantile(post$kappa, 0.025), 4),
+    kappa_q975 = round(quantile(post$kappa, 0.975), 4),
+    phi_MLE_deg = round(angle_to_signed_degrees(atan2(mle$c_hat[2], mle$c_hat[1])), 2),
+    phi_mean_deg = round(mean(post$phi_deg), 2),
+    phi_sd_deg = round(sd(post$phi_deg), 2),
+    row.names = NULL
+  )
+}
+
+safe_sym_inverse <- function(M, tol = 1e-10) {
+  eig <- eigen((M + t(M)) / 2, symmetric = TRUE)
+  vals_inv <- 1 / pmax(eig$values, tol)
+  eig$vectors %*% diag(vals_inv, nrow = length(vals_inv)) %*% t(eig$vectors)
+}
+
+parallel_lapply <- function(X, FUN, ..., n_cores = 1) {
+  if (.Platform$OS.type == "windows" || n_cores <= 1) {
+    lapply(X, FUN, ...)
+  } else {
+    parallel::mclapply(X, FUN, ..., mc.cores = n_cores, mc.preschedule = TRUE)
+  }
+}
+
+run_single_path <- function(seed, c0, N, M) {
+  set.seed(seed)
+  p <- length(c0)
+  path <- matrix(0, nrow = M + 1, ncol = p)
+  path[1, ] <- c0
+
+  for (t in seq_len(M)) {
+    c_curr <- path[t, ]
+    x_new <- as.numeric(rstiefel::rmf.vector(c_curr))
+    score <- .bd$score_fn(c_curr, x_new, p)
+    wt <- 1 / (t + N - 1)
+    path[t + 1, ] <- c_curr + wt * score
+  }
+
+  path
+}
+
+run_mps_paths <- function(X, M, B, n_cores = 1, base_seed = 42) {
+  c0 <- as.numeric(.bd$mle_vmf(X))
+  paths <- parallel_lapply(
+    seq_len(B),
+    function(i) run_single_path(base_seed + i, c0 = c0, N = ncol(X), M = M),
+    n_cores = n_cores
+  )
+
+  out <- array(0, dim = c(M + 1, nrow(X), B))
+  for (i in seq_len(B)) out[, , i] <- paths[[i]]
+  out
+}
+
+post_correct_single_path <- function(path, N, p = ncol(path), tol = 1e-10,
+                                     correct_full_path = TRUE) {
+  c0 <- path[1, ]
+  V <- matrix(0, p, p)
+  total_weight <- 0
+
+  for (m_idx in seq_len(nrow(path) - 1)) {
+    m <- N + m_idx - 1
+    wt2 <- (1 / m)^2
+    V <- V + wt2 * .bd$get_FIM_vmf(path[m_idx, ], p)
+    total_weight <- total_weight + wt2
+  }
+
+  A <- total_weight * safe_sym_inverse(V, tol = tol)
+  if (!correct_full_path) {
+    out <- path
+    out[nrow(path), ] <- as.vector(c0 + A %*% (path[nrow(path), ] - c0))
+    return(out)
+  }
+
+  centered <- t(t(path) - c0)
+  corrected <- t(A %*% t(centered))
+  t(t(corrected) + c0)
+}
+
+post_correct_array <- function(c_array, N, p = dim(c_array)[2], n_cores = 1) {
+  corrected <- parallel_lapply(
+    seq_len(dim(c_array)[3]),
+    function(i) post_correct_single_path(c_array[, , i], N = N, p = p),
+    n_cores = n_cores
+  )
+
+  out <- array(0, dim = dim(c_array))
+  for (i in seq_along(corrected)) out[, , i] <- corrected[[i]]
+  out
+}
+```
+
+## Load data and compute MLEs
+
+```{r load-data}
+summer_df <- read.csv(file.path(data_dir, "summer_subarea.csv"))
+winter_df <- read.csv(file.path(data_dir, "winter_subarea.csv"))
+
+X_summer <- unit_matrix(summer_df)
+X_winter <- unit_matrix(winter_df)
+X_summer_obs <- obs_matrix(X_summer)
+X_winter_obs <- obs_matrix(X_winter)
+
+mle_summer <- fit_vmf(X_summer)
+mle_winter <- fit_vmf(X_winter)
+
+mle_table <- data.frame(
+  Season = c("Summer", "Winter"),
+  N = c(ncol(X_summer), ncol(X_winter)),
+  R_bar = c(mle_summer$R_bar, mle_winter$R_bar),
+  mu1_hat = c(mle_summer$mu_hat[1], mle_winter$mu_hat[1]),
+  mu2_hat = c(mle_summer$mu_hat[2], mle_winter$mu_hat[2]),
+  phi_hat_deg = c(
+    angle_to_signed_degrees(atan2(mle_summer$mu_hat[2], mle_summer$mu_hat[1])),
+    angle_to_signed_degrees(atan2(mle_winter$mu_hat[2], mle_winter$mu_hat[1]))
+  ),
+  kappa_hat = c(mle_summer$kappa_hat, mle_winter$kappa_hat)
+)
+
+mle_table_print <- mle_table
+num_cols <- vapply(mle_table_print, is.numeric, logical(1))
+mle_table_print[num_cols] <- lapply(mle_table_print[num_cols], round, 4)
+knitr::kable(mle_table_print, caption = "Seasonal vMF maximum likelihood estimates.")
+```
+
+## Predictive resampling and post-correction
+
+The chunk below reruns the full predictive-resampling experiment when
+`rerun_mps = TRUE` or when no cached result file is available.  The full-path
+helper uses the same score, Fisher information, and affine variance correction
+as the exported `bayesdir` sampler, but stores the intermediate states needed
+for the trace figure.
+
+```{r run-or-load-results}
+cached_source <- if (file.exists(results_rds)) results_rds else paper_results_rds
+
+if (!rerun_mps && file.exists(cached_source)) {
+  res <- readRDS(cached_source)
+} else {
+  arr_summer_raw <- run_mps_paths(X_summer, M = nmc, B = n_chains, n_cores = n_cores)
+  arr_winter_raw <- run_mps_paths(X_winter, M = nmc, B = n_chains, n_cores = n_cores)
+
+  arr_summer_pc <- post_correct_array(arr_summer_raw, N = ncol(X_summer), n_cores = n_cores)
+  arr_winter_pc <- post_correct_array(arr_winter_raw, N = ncol(X_winter), n_cores = n_cores)
+
+  res <- list(
+    mle_summer = mle_summer,
+    mle_winter = mle_winter,
+    post_summer_raw = extract_posterior(arr_summer_raw),
+    post_winter_raw = extract_posterior(arr_winter_raw),
+    post_summer_pc = extract_posterior(arr_summer_pc),
+    post_winter_pc = extract_posterior(arr_winter_pc),
+    arr_summer_raw = arr_summer_raw,
+    arr_winter_raw = arr_winter_raw,
+    arr_summer_pc = arr_summer_pc,
+    arr_winter_pc = arr_winter_pc
+  )
+
+  saveRDS(res, results_rds)
+}
+
+mle_summer <- res$mle_summer
+mle_winter <- res$mle_winter
+post_summer_raw <- res$post_summer_raw
+post_winter_raw <- res$post_winter_raw
+post_summer_pc <- res$post_summer_pc
+post_winter_pc <- res$post_winter_pc
+arr_summer_pc <- res$arr_summer_pc
+arr_winter_pc <- res$arr_winter_pc
+
+summary_table <- rbind(
+  make_summary(res$post_summer_raw, mle_summer, ncol(X_summer), "Summer", "Raw MPS"),
+  make_summary(res$post_winter_raw, mle_winter, ncol(X_winter), "Winter", "Raw MPS"),
+  make_summary(post_summer_pc, mle_summer, ncol(X_summer), "Summer", "Post-corrected MPS"),
+  make_summary(post_winter_pc, mle_winter, ncol(X_winter), "Winter", "Post-corrected MPS")
+)
+
+write.csv(summary_table, file.path(figure_dir, "oscar_southern_offshore_compact_summary_table.csv"), row.names = FALSE)
+knitr::kable(summary_table, caption = "Raw and post-corrected martingale posterior summaries.")
+```
+
+## Post-corrected trace plot
+
+```{r trace-plot, fig.width=15, fig.height=5.625}
+trace_axis_label_cex <- 1.8
+trace_axis_tick_cex <- 1.6
+trace_legend_location_units <- "npc"
+trace_legend_location_kappa <- c(-0.18, 1.00)
+trace_legend_location_phi <- c(-0.18, 1.00)
+trace_legend_cex <- 1.25
+trace_legend_xpd <- NA
+trace_subplot_mar <- c(4.2, 5.8, 2.4, 1.4)
+trace_outer_mar <- c(0.5, 0.5, 2.0, 0)
+trace_panel_widths <- c(1.00, 1.00)
+trace_panel_respect <- FALSE
+trace_subtitle_cex <- 1.8
+trace_outer_title_cex <- 1.10
+trace_line_lwd <- 0.9
+trace_mle_lwd <- 1.5
+trace_density_lwd <- 1.3
+trace_xlim_multiplier <- 1.38
+trace_density_x_offset <- 1.04
+trace_density_width <- 0.28
+kappa_ylim <- c(1.1, 3.25)
+phi_use_compressed_y_axis <- TRUE
+phi_lower_ylim <- NULL
+phi_upper_ylim <- c(90, 160)
+phi_gap_fraction <- 0.16
+phi_gap_label_cex <- 0.70
+
+trace_matrices <- function(c_array, n_show) {
+  n_show <- min(n_show, dim(c_array)[3])
+  list(
+    kappa = apply(c_array[, , seq_len(n_show), drop = FALSE], c(1, 3), function(v) sqrt(sum(v^2))),
+    phi = apply(c_array[, , seq_len(n_show), drop = FALSE], c(1, 3), function(v) angle_to_signed_degrees(atan2(v[2], v[1])))
+  )
+}
+
+pad_range <- function(x, frac = 0.08, min_pad = 0.1) {
+  r <- range(x, finite = TRUE)
+  d <- diff(r)
+  pad <- max(frac * d, min_pad)
+  c(r[1] - pad, r[2] + pad)
+}
+
+make_compressed_axis <- function(arr_summer, arr_winter, lower_ylim = NULL,
+                                 upper_ylim = NULL, gap_fraction = 0.16) {
+  r_s <- pad_range(arr_summer)
+  r_w <- pad_range(arr_winter)
+  if (mean(r_s) <= mean(r_w)) {
+    lower <- if (is.null(lower_ylim)) r_s else lower_ylim
+    upper <- if (is.null(upper_ylim)) r_w else upper_ylim
+  } else {
+    lower <- if (is.null(lower_ylim)) r_w else lower_ylim
+    upper <- if (is.null(upper_ylim)) r_s else upper_ylim
+  }
+
+  lower <- sort(lower)
+  upper <- sort(upper)
+  lower_height <- diff(lower)
+  upper_height <- diff(upper)
+  gap_height <- max(lower_height, upper_height, 1e-8) * gap_fraction
+
+  map_y <- function(y) {
+    y_mapped <- numeric(length(y))
+    lower_idx <- y <= lower[2]
+    upper_idx <- y >= upper[1]
+    gap_idx <- !(lower_idx | upper_idx)
+    y_mapped[lower_idx] <- y[lower_idx] - lower[1]
+    y_mapped[upper_idx] <- lower_height + gap_height + (y[upper_idx] - upper[1])
+    if (any(gap_idx)) {
+      y_mapped[gap_idx] <- lower_height +
+        (y[gap_idx] - lower[2]) / max(upper[1] - lower[2], 1e-8) * gap_height
+    }
+    y_mapped
+  }
+
+  ticks <- c(pretty(lower), pretty(upper))
+  ticks <- ticks[(ticks >= lower[1] & ticks <= lower[2]) | (ticks >= upper[1] & ticks <= upper[2])]
+
+  list(
+    lower_height = lower_height,
+    gap_height = gap_height,
+    y_limits_mapped = c(0, lower_height + gap_height + upper_height),
+    map_y = map_y,
+    ticks = ticks,
+    tick_positions = map_y(ticks)
+  )
+}
+
+draw_trace_x_axis <- function(n_iter, label = "Forward step", line = 2.8) {
+  ticks <- pretty(c(0, n_iter))
+  ticks <- ticks[ticks >= 0 & ticks <= n_iter]
+  axis(1, at = ticks, labels = ticks, lwd = 0, lwd.ticks = 1, cex.axis = trace_axis_tick_cex)
+  usr <- par("usr")
+  segments(0, usr[3], n_iter, usr[3], xpd = FALSE)
+  mtext(label, side = 1, line = line, at = n_iter / 2, cex = trace_axis_label_cex)
+}
+
+legend_location_to_plot <- function(location, map_y = identity) {
+  if (!is.numeric(location) || length(location) != 2 || trace_legend_location_units != "npc") {
+    return(location)
+  }
+  usr <- par("usr")
+  c(usr[1] + location[1] * diff(usr[1:2]), usr[3] + location[2] * diff(usr[3:4]))
+}
+
+combined_trace_panel <- function(arr_summer, arr_winter, mle_summer_val, mle_winter_val,
+                                 ylab_expr, label, col_s, fill_s, border_s,
+                                 col_w, fill_w, border_w, legend_location,
+                                 y_limits = NULL, compressed_axis = NULL) {
+  n_iter <- nrow(arr_summer)
+  iters <- seq_len(n_iter)
+  x_limits <- c(0, n_iter * trace_xlim_multiplier)
+
+  if (is.null(compressed_axis)) {
+    map_y <- function(y) y
+    y_plot_limits <- if (is.null(y_limits)) pad_range(c(arr_summer, arr_winter)) else y_limits
+    y_axis_ticks <- pretty(y_plot_limits)
+    y_axis_positions <- y_axis_ticks
+  } else {
+    map_y <- compressed_axis$map_y
+    y_plot_limits <- compressed_axis$y_limits_mapped
+    y_axis_ticks <- compressed_axis$ticks
+    y_axis_positions <- compressed_axis$tick_positions
+  }
+
+  plot(NULL, xlim = x_limits, ylim = y_plot_limits,
+       xlab = "", ylab = ylab_expr, main = label,
+       xaxt = "n", yaxt = "n",
+       cex.lab = trace_axis_label_cex, cex.main = trace_subtitle_cex)
+  draw_trace_x_axis(n_iter)
+  axis(2, at = y_axis_positions, labels = y_axis_ticks, cex.axis = trace_axis_tick_cex)
+
+  for (i in seq_len(ncol(arr_summer))) lines(iters, map_y(arr_summer[, i]), col = col_s, lwd = trace_line_lwd)
+  for (i in seq_len(ncol(arr_winter))) lines(iters, map_y(arr_winter[, i]), col = col_w, lwd = trace_line_lwd)
+  abline(h = map_y(mle_summer_val), lty = 2, col = border_s, lwd = trace_mle_lwd)
+  abline(h = map_y(mle_winter_val), lty = 2, col = border_w, lwd = trace_mle_lwd)
+
+  dens_s <- density(arr_summer[n_iter, ], n = 512)
+  dens_w <- density(arr_winter[n_iter, ], n = 512)
+  dens_scale <- n_iter * trace_density_width / max(c(dens_s$y, dens_w$y))
+  x_offset <- n_iter * trace_density_x_offset
+  polygon(x_offset + dens_s$y * dens_scale, map_y(dens_s$x), col = fill_s, border = border_s, lwd = trace_density_lwd)
+  polygon(x_offset + dens_w$y * dens_scale, map_y(dens_w$x), col = fill_w, border = border_w, lwd = trace_density_lwd)
+  segments(x_offset, y_plot_limits[1], x_offset, y_plot_limits[2], col = "gray60", lty = 3, lwd = 0.8)
+
+  if (!is.null(compressed_axis)) {
+    gap_mid <- compressed_axis$lower_height + compressed_axis$gap_height / 2
+    abline(h = gap_mid, col = "gray78", lty = 3, lwd = 0.8)
+    text(n_iter * 0.52, gap_mid, "compressed y gap", col = "gray45", cex = phi_gap_label_cex)
+  }
+
+  legend(legend_location_to_plot(legend_location, map_y),
+         legend = c("Summer traces", "Winter traces", "Summer terminal density", "Winter terminal density"),
+         col = c(border_s, border_w, border_s, border_w),
+         lty = 1, lwd = c(trace_line_lwd, trace_line_lwd, 4, 4),
+         bty = "n", cex = trace_legend_cex, xpd = trace_legend_xpd)
+}
+
+plot_combined_trace_figure <- function(arr_summer, arr_winter, mle_summer, mle_winter) {
+  tm_s <- trace_matrices(arr_summer, trace_show)
+  tm_w <- trace_matrices(arr_winter, trace_show)
+  phi_axis <- if (isTRUE(phi_use_compressed_y_axis)) {
+    make_compressed_axis(tm_s$phi, tm_w$phi, phi_lower_ylim, phi_upper_ylim, phi_gap_fraction)
+  } else {
+    NULL
+  }
+
+  old_par <- par(no.readonly = TRUE)
+  on.exit(par(old_par), add = TRUE)
+  layout(matrix(c(1, 2), nrow = 1), widths = trace_panel_widths, respect = trace_panel_respect)
+  par(mar = trace_subplot_mar, oma = trace_outer_mar)
+
+  combined_trace_panel(
+    tm_s$kappa, tm_w$kappa, mle_summer$kappa_hat, mle_winter$kappa_hat,
+    expression(kappa), "(a) " ~ kappa,
+    rgb(0.25, 0.45, 0.75, 0.06), rgb(0.25, 0.45, 0.75, 0.24), rgb(0.2, 0.35, 0.65),
+    rgb(0.9, 0.45, 0.2, 0.06), rgb(0.9, 0.45, 0.2, 0.24), rgb(0.8, 0.35, 0.15),
+    trace_legend_location_kappa,
+    y_limits = kappa_ylim
+  )
+
+  combined_trace_panel(
+    tm_s$phi, tm_w$phi,
+    angle_to_signed_degrees(atan2(mle_summer$mu_hat[2], mle_summer$mu_hat[1])),
+    angle_to_signed_degrees(atan2(mle_winter$mu_hat[2], mle_winter$mu_hat[1])),
+    expression(phi ~ "(deg)"), "(b) " ~ phi,
+    rgb(0.25, 0.45, 0.75, 0.06), rgb(0.25, 0.45, 0.75, 0.24), rgb(0.2, 0.35, 0.65),
+    rgb(0.9, 0.45, 0.2, 0.06), rgb(0.9, 0.45, 0.2, 0.24), rgb(0.8, 0.35, 0.15),
+    trace_legend_location_phi,
+    compressed_axis = phi_axis
+  )
+}
+
+trace_png <- file.path(figure_dir, "oscar_southern_offshore_compact_combined_traces_postcorrected.png")
+trace_pdf <- file.path(figure_dir, "oscar_southern_offshore_compact_combined_traces_postcorrected.pdf")
+
+png(trace_png, width = 2400, height = 900, res = 160)
+plot_combined_trace_figure(arr_summer_pc, arr_winter_pc, mle_summer, mle_winter)
+dev.off()
+
+pdf(trace_pdf, width = 15.0, height = 5.625)
+plot_combined_trace_figure(arr_summer_pc, arr_winter_pc, mle_summer, mle_winter)
+dev.off()
+
+plot_combined_trace_figure(arr_summer_pc, arr_winter_pc, mle_summer, mle_winter)
+```
+
+## Rose diagram and angular density
+
+```{r rose-density-figure, fig.width=13.5, fig.height=6.2}
+paper2_season_colors <- c("Summer" = "#2b6cb0", "Winter" = "#dd6b20")
+paper2_hist_alpha <- 0.4
+paper2_band_alpha <- 0.16
+paper2_hist_edge_alpha <- 0.55
+paper2_density_linewidth <- 1.05
+paper2_hist_linewidth <- 0.25
+paper2_mean_arrow_linewidth <- 0.85
+paper2_subtitle_size <- 18
+paper2_legend_font_size <- 16
+paper2_axis_label_size <- 14
+paper2_axis_tick_size <- 13
+paper2_polar_tick_size <- 5.0
+paper2_gap_pt <- 16
+paper2_rel_widths <- c(1.0, 1.0)
+
+circle_xy <- function(r = 1, n = 400) {
+  theta <- seq(0, 2 * pi, length.out = n)
+  data.frame(x = r * cos(theta), y = r * sin(theta))
+}
+
+vmf_density_s1 <- function(theta, kappa, phi) {
+  log_dens <- kappa * cos(theta - phi) - log(2 * pi) -
+    (log(besselI(kappa, 0, expon.scaled = TRUE)) + kappa)
+  exp(log_dens)
+}
+
+posterior_density_band <- function(theta_grid, post, max_draws = 600) {
+  n_draws <- min(max_draws, nrow(post))
+  idx <- if (n_draws < nrow(post)) sample(seq_len(nrow(post)), n_draws) else seq_len(nrow(post))
+  dens_mat <- vapply(idx, function(i) vmf_density_s1(theta_grid, post$kappa[i], post$phi_rad[i]), numeric(length(theta_grid)))
+  if (is.vector(dens_mat)) dens_mat <- matrix(dens_mat, ncol = 1)
+  list(
+    mean = rowMeans(dens_mat),
+    lo = apply(dens_mat, 1, quantile, probs = 0.025),
+    hi = apply(dens_mat, 1, quantile, probs = 0.975)
+  )
+}
+
+make_rose_hist_polygons <- function(X_mat, season_label, scale_r, n_bins = rose_bins) {
+  base_r <- rose_inner_radius
+  angles_deg <- atan2(X_mat[, 2], X_mat[, 1]) * 180 / pi
+  N <- nrow(X_mat)
+  bin_width <- 360 / n_bins
+  breaks <- seq(-180, 180, by = bin_width)
+  angle_cut <- cut(angles_deg, breaks = breaks, include.lowest = TRUE, right = FALSE)
+  counts <- as.numeric(table(angle_cut))
+  dens_hist <- counts / (N * bin_width * pi / 180)
+
+  poly_list <- lapply(seq_along(counts), function(i) {
+    a_s <- breaks[i] * pi / 180
+    a_e <- breaks[i + 1] * pi / 180
+    a_seq <- seq(a_s, a_e, length.out = 20)
+    r_val <- base_r + scale_r * dens_hist[i]
+    data.frame(
+      x = c(base_r * cos(a_seq[1]), r_val * cos(a_seq), base_r * cos(rev(a_seq)[1])),
+      y = c(base_r * sin(a_seq[1]), r_val * sin(a_seq), base_r * sin(rev(a_seq)[1])),
+      bin = paste(season_label, i, sep = "_"),
+      season = season_label
+    )
+  })
+  do.call(rbind, poly_list)
+}
+
+make_posterior_band_polygon <- function(theta_grid, post_band, season_label, scale_r) {
+  base_r <- rose_inner_radius
+  r_lo <- base_r + scale_r * post_band$lo
+  r_hi <- base_r + scale_r * post_band$hi
+  data.frame(
+    x = c(r_lo * cos(theta_grid), rev(r_hi * cos(theta_grid))),
+    y = c(r_lo * sin(theta_grid), rev(r_hi * sin(theta_grid))),
+    season = season_label
+  )
+}
+
+make_density_curve <- function(theta_grid, mle, season_label, scale_r) {
+  phi <- atan2(mle$mu_hat[2], mle$mu_hat[1])
+  dens <- vmf_density_s1(theta_grid, mle$kappa_hat, phi)
+  r <- rose_inner_radius + scale_r * dens
+  data.frame(x = r * cos(theta_grid), y = r * sin(theta_grid), season = season_label)
+}
+
+make_mean_arrow <- function(mle, season_label, max_density, scale_r) {
+  phi <- atan2(mle$mu_hat[2], mle$mu_hat[1])
+  arrow_r <- rose_inner_radius + scale_r * max_density * 0.86
+  data.frame(x = 0, y = 0, xend = arrow_r * cos(phi), yend = arrow_r * sin(phi), season = season_label)
+}
+
+build_combined_polar_paper <- function(X_summer, X_winter, mle_summer, mle_winter,
+                                       post_summer, post_winter, scale_r, tick_r) {
+  theta_fine <- seq(-pi, pi, length.out = 500)
+  phi_s <- atan2(mle_summer$mu_hat[2], mle_summer$mu_hat[1])
+  phi_w <- atan2(mle_winter$mu_hat[2], mle_winter$mu_hat[1])
+  dens_s <- vmf_density_s1(theta_fine, mle_summer$kappa_hat, phi_s)
+  dens_w <- vmf_density_s1(theta_fine, mle_winter$kappa_hat, phi_w)
+  post_band_s <- posterior_density_band(theta_fine, post_summer)
+  post_band_w <- posterior_density_band(theta_fine, post_winter)
+
+  hist_df <- rbind(
+    make_rose_hist_polygons(X_summer, "Summer", scale_r),
+    make_rose_hist_polygons(X_winter, "Winter", scale_r)
+  )
+  band_df <- rbind(
+    make_posterior_band_polygon(theta_fine, post_band_s, "Summer", scale_r),
+    make_posterior_band_polygon(theta_fine, post_band_w, "Winter", scale_r)
+  )
+  curve_df <- rbind(
+    make_density_curve(theta_fine, mle_summer, "Summer", scale_r),
+    make_density_curve(theta_fine, mle_winter, "Winter", scale_r)
+  )
+  arrow_df <- rbind(
+    make_mean_arrow(mle_summer, "Summer", max(dens_s), scale_r),
+    make_mean_arrow(mle_winter, "Winter", max(dens_w), scale_r)
+  )
+
+  tick_angles <- c(0, 90, 180, -90) * pi / 180
+  tick_df <- data.frame(
+    x = tick_r * cos(tick_angles),
+    y = tick_r * sin(tick_angles),
+    lab = c("0*degree", "90*degree", "180*degree", "-90*degree")
+  )
+
+  ggplot() +
+    geom_polygon(data = hist_df, aes(x, y, group = bin, fill = season),
+                 color = scales::alpha("white", paper2_hist_edge_alpha),
+                 linewidth = paper2_hist_linewidth, alpha = paper2_hist_alpha) +
+    geom_polygon(data = band_df, aes(x, y, group = season, fill = season),
+                 alpha = paper2_band_alpha, color = NA, show.legend = FALSE) +
+    geom_path(data = curve_df, aes(x, y, color = season),
+              linewidth = paper2_density_linewidth, show.legend = TRUE) +
+    geom_path(data = circle_xy(rose_inner_radius), aes(x, y), color = "grey50", linewidth = 0.35) +
+    geom_segment(data = arrow_df, aes(x = x, y = y, xend = xend, yend = yend, color = season),
+                 arrow = arrow(length = grid::unit(0.15, "cm")),
+                 linewidth = paper2_mean_arrow_linewidth, show.legend = FALSE) +
+    geom_text(data = tick_df, aes(x, y, label = lab), size = paper2_polar_tick_size, color = "grey30", parse = TRUE) +
+    scale_fill_manual(values = paper2_season_colors, name = "Season") +
+    scale_color_manual(values = paper2_season_colors, name = "Season") +
+    guides(fill = guide_legend(override.aes = list(alpha = 0.55, linewidth = 0)), color = "none") +
+    coord_fixed() +
+    labs(title = "(a)") +
+    theme_void(base_size = paper2_axis_label_size) +
+    theme(
+      plot.title = element_text(size = paper2_subtitle_size, face = "bold", hjust = 0.5),
+      legend.position = "bottom",
+      legend.title = element_text(size = paper2_legend_font_size),
+      legend.text = element_text(size = paper2_legend_font_size),
+      plot.margin = margin(5.5, paper2_gap_pt / 2, 5.5, 5.5)
+    )
+}
+
+build_angular_density_plot <- function(X_summer, X_winter, mle_summer, mle_winter,
+                                       post_summer, post_winter, n_bins = rose_bins) {
+  theta_grid <- seq(-pi, pi, length.out = 500)
+  obs_df <- rbind(
+    data.frame(angle = atan2(X_summer[, 2], X_summer[, 1]) * 180 / pi, season = "Summer"),
+    data.frame(angle = atan2(X_winter[, 2], X_winter[, 1]) * 180 / pi, season = "Winter")
+  )
+
+  make_density_df <- function(mle, post, season_label) {
+    phi <- atan2(mle$mu_hat[2], mle$mu_hat[1])
+    dens <- vmf_density_s1(theta_grid, mle$kappa_hat, phi) * (pi / 180)
+    post_band <- posterior_density_band(theta_grid, post)
+    data.frame(
+      angle = theta_grid * 180 / pi,
+      density = dens,
+      density_lo = post_band$lo * (pi / 180),
+      density_hi = post_band$hi * (pi / 180),
+      season = season_label
+    )
+  }
+
+  fit_df <- rbind(
+    make_density_df(mle_summer, post_summer, "Summer"),
+    make_density_df(mle_winter, post_winter, "Winter")
+  )
+
+  ggplot() +
+    geom_histogram(data = obs_df, aes(x = angle, y = after_stat(density), fill = season),
+                   binwidth = 360 / n_bins, boundary = -180, closed = "left",
+                   position = "identity", alpha = paper2_hist_alpha,
+                   color = "white", linewidth = 0.25) +
+    geom_ribbon(data = fit_df, aes(x = angle, ymin = density_lo, ymax = density_hi, fill = season),
+                alpha = paper2_band_alpha) +
+    geom_line(data = fit_df, aes(x = angle, y = density, color = season),
+              linewidth = paper2_density_linewidth) +
+    scale_fill_manual(values = paper2_season_colors, name = "Season") +
+    scale_color_manual(values = paper2_season_colors, name = "Season") +
+    scale_x_continuous(breaks = seq(-180, 180, 60), limits = c(-180, 180)) +
+    labs(title = "(b)", x = expression(Delta * theta ~ "(degrees)"), y = "Density") +
+    theme_minimal(base_size = paper2_axis_label_size) +
+    theme(
+      plot.title = element_text(size = paper2_subtitle_size, face = "bold", hjust = 0.5),
+      axis.title = element_text(size = paper2_axis_label_size),
+      axis.text = element_text(size = paper2_axis_tick_size),
+      legend.position = "bottom",
+      legend.title = element_text(size = paper2_legend_font_size),
+      legend.text = element_text(size = paper2_legend_font_size),
+      plot.margin = margin(5.5, 5.5, 5.5, paper2_gap_pt / 2)
+    )
+}
+
+plot_paper_figure <- function(X_summer, X_winter, mle_summer, mle_winter,
+                              post_summer, post_winter) {
+  theta_fine <- seq(-pi, pi, length.out = 500)
+  hist_max_fn <- function(X_mat) {
+    angles_deg <- atan2(X_mat[, 2], X_mat[, 1]) * 180 / pi
+    bin_width <- 360 / rose_bins
+    breaks <- seq(-180, 180, by = bin_width)
+    angle_cut <- cut(angles_deg, breaks = breaks, include.lowest = TRUE, right = FALSE)
+    counts <- as.numeric(table(angle_cut))
+    max(counts / (nrow(X_mat) * bin_width * pi / 180))
+  }
+  phi_s <- atan2(mle_summer$mu_hat[2], mle_summer$mu_hat[1])
+  phi_w <- atan2(mle_winter$mu_hat[2], mle_winter$mu_hat[1])
+  post_band_s <- posterior_density_band(theta_fine, post_summer)
+  post_band_w <- posterior_density_band(theta_fine, post_winter)
+  global_max <- max(
+    hist_max_fn(X_summer),
+    hist_max_fn(X_winter),
+    max(vmf_density_s1(theta_fine, mle_summer$kappa_hat, phi_s)),
+    max(vmf_density_s1(theta_fine, mle_winter$kappa_hat, phi_w)),
+    max(post_band_s$hi),
+    max(post_band_w$hi)
+  )
+  scale_r <- 0.7 / global_max
+  tick_r <- rose_inner_radius + scale_r * global_max * 1.12
+
+  p_a <- build_combined_polar_paper(X_summer, X_winter, mle_summer, mle_winter,
+                                    post_summer, post_winter, scale_r, tick_r)
+  p_b <- build_angular_density_plot(X_summer, X_winter, mle_summer, mle_winter,
+                                    post_summer, post_winter)
+
+  plot_grid(p_a, p_b, nrow = 1, rel_widths = paper2_rel_widths, align = "h") +
+    theme(plot.margin = margin(5.5, 5.5, 5.5, 5.5))
+}
+
+paper_fig <- plot_paper_figure(
+  X_summer_obs, X_winter_obs,
+  mle_summer, mle_winter,
+  post_summer_pc, post_winter_pc
+)
+
+rose_png <- file.path(figure_dir, "oscar_southern_offshore_compact_paper_rose_density_postcorrected.png")
+rose_pdf <- file.path(figure_dir, "oscar_southern_offshore_compact_paper_rose_density_postcorrected.pdf")
+
+ggsave(rose_png, paper_fig, width = 13.5, height = 6.2, dpi = 220)
+ggsave(rose_pdf, paper_fig, width = 13.5, height = 6.2)
+
+paper_fig
+```
