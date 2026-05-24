@@ -1,4 +1,4 @@
-# Simulation Study: Bayesian vMF models for current direction Data
+# Simulation Study: Bayesian vMF models for current direction Data with p=2
 
 This vignette demonstrates a complete simulation study using `bayesdir` on synthetic traffic data from a grid road network.
 
@@ -13,6 +13,7 @@ library(rstiefel)
 library(circular) ## for the coordinates in polar system 
 library(circglmbayes) ## for sampling kappa through mcmc method. 
 library(parallel)
+library(coda) ## for effienct sample size
 
 set.seed(20260509)
 ```
@@ -21,15 +22,13 @@ set.seed(20260509)
 
 ## Sythetic data for illustration with p=2
 
-------------------------------------------------------------------------
-
-## Bayesian Inference on a conjugate prior.
-
-Used as an benchmark. See Forbes & Mardia (2015) by $\texttt{circglmbayes}$
+Generate data from von-mises fisher distribution. return in both cartesian coordinate and polar coordinate.
 
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration.
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
+#' function to generate sythetic data with p=2
+#' @return 
 generate_vmf_data <- function(n, mu_true, kappa_true) {
   
   eta_true <- kappa_true * c(cos(mu_true), sin(mu_true))
@@ -38,9 +37,43 @@ generate_vmf_data <- function(n, mu_true, kappa_true) {
   theta_rad <- atan2(X_cartesian[2, ], X_cartesian[1, ])
   list(X = X_cartesian, theta = theta_rad)
 }
+```
 
+An example,
 
-fit_mcmc_vmf <- function(theta, prior, n_iter = 10000, burn = 5000) {
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+data <- generate_vmf_data(100, 2, 4)
+```
+
+For p \>2, simply follow $\texttt{rstiefel::rmf.vector}$, below we have an example.
+
+```{r,eval=FALSE,include=FALSE,purl=FALSEr}
+X <- replicate(n,rmf.vector(c(1,1,1)))
+```
+
+## Bayesian Inference on a conjugate prior with p=2.
+
+Used as an benchmark. See Forbes & Mardia (2015) by $\texttt{circglmbayes}$.
+
+For the von Mises distribution on $[0,2\pi)$, $f(\theta\mid\mu,\kappa) = \frac{1}{2\pi I_0(\kappa)}\exp\{\kappa\cos(\theta-\mu)\}$, and conjugate prior $\pi(\mu,\kappa) \propto I_0(\kappa)^{-c}\exp\{\kappa R_0\cos(\mu-\mu_0)\},$ with hyperparameters $c\ge0$, $R_0\ge0$, and $\mu_0$. The resulting joint posterior is$$\pi(\mu,\kappa\mid\theta_{1:n}) \propto I_0(\kappa)^{-(c+n)}\exp{\kappa R_n\cos(\mu-\bar\theta_n)}$$ where the posterior resultant length $R_n$ and mean direction $\bar\theta_n$ are defined by $R_n\cos\bar\theta_n = R_0\cos\mu_0 + \sum_{i=1}^{n}\cos\theta_i$ and $R_n\sin\bar\theta_n = R_0\sin\mu_0 + \sum_{i=1}^{n}\sin\theta_i$.
+
+We sample from the posterior using a two‑step Gibbs sampler.\
+Given current values $(\mu,\kappa)$,
+
+- Draw $\mu\mid\kappa,\theta$ from a von Mises distribution with mean direction $\bar\theta_n$ and concentration $\kappa R_n$.\
+
+- Draw $\kappa\mid\mu,\theta$ from the full conditional $$    \pi(\kappa\mid\mu,\theta) \propto I_0(\kappa)^{-\eta}\exp\{-\eta\beta_0\kappa\},
+    $$ where $\eta = c+n$ and $\beta_0 = -\frac{R_n}{\eta}\cos(\mu-\bar\theta_n)$.
+
+Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration. Also, $\texttt{theta}$ as an vector with each scalar $\theta_i\in [0, 2\pi]$ and dimension n.
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+#' general MCMC fitter
+#' @param theta data
+#' @param prior list with hyperparameter (assume to be non informative)
+#' @param n_iter,burn number of iteration and burn-in, (n_iter > burn)
+#' @return a (n_iter-burn)x2 matrix where returns (n_iter-burn)  samples.
+fit_mcmc_vmf <- function(theta, prior = list(c = 0, R0 = 0, mu0 = 0), n_iter = 10000, burn = 5000) {
   n <- length(theta)
   C_n <- prior$R0 * cos(prior$mu0) + sum(cos(theta))
   S_n <- prior$R0 * sin(prior$mu0) + sum(sin(theta))
@@ -58,203 +91,576 @@ fit_mcmc_vmf <- function(theta, prior, n_iter = 10000, burn = 5000) {
   }
   cbind(mu = mu_sam[-(1:burn)], kappa = kappa_sam[-(1:burn)])
 }
+```
+
+Below we will show an brief example.
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+mu_true <- 2
+kappa_true <- 4
+data <- generate_vmf_data(100, mu_true = mu_true, kappa_true = kappa_true)
+res_MCMC <- fit_mcmc_vmf(data$theta)
+
+kappa_MCMC <- res_MCMC[,2]
+mu_MCMC <- res_MCMC[,1]
+
+ess_mu    <- effectiveSize(mu_MCMC)
+ess_kappa <- effectiveSize(kappa_MCMC)
+cat("Effective Sample Size (after burn-in):\n")
+cat(sprintf("  mu    : %.1f\n", ess_mu))
+cat(sprintf("  kappa : %.1f\n", ess_kappa))
+```
+
+Visualize Result after fitting data,
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+plot(kappa_MCMC,type = "l",xlab = "Iteration", ylab = "kappa", main = "Trace of kappa")
+abline(h = kappa_true,lty=4,col = "red")
+
+kappa_den <- density(kappa_MCMC)
+plot(kappa_den,main = "Posterior density of kappa", xlab = "kappa",
+         col = "steelblue", lwd = 2)
+abline(v = kappa_true,lty=4,col = "red")
 
 
+plot(mu_MCMC,type = 'l',xlab = "Iteration", ylab = "mu", main = "Trace of mu")
+abline(h = mu_true,lty=4,col = "red")
 
-sim_one_round <- function(n, mu_true, kappa_true, m_vals, B, prior,
-                          n_cores, seed_offset) {
-  set.seed(seed_offset)
-  data <- generate_vmf_data(n, mu_true, kappa_true)
+mu_den <- density(mu_MCMC)
+plot(mu_den,main = "Posterior density of mu", xlab = "mu",
+         col = "steelblue", lwd = 2)
+abline(v = mu_true,lty=4,col = "red")
+```
 
-  
-  t0 <- proc.time()[3]
-  b_samples <- fit_mcmc_vmf(data$theta, prior, n_iter = B + 5000, burn = 5000)
-  t1 <- proc.time()[3]
-  stats_mcmc_mu <- get_stats(b_samples[, "mu"], mu_true)
-  stats_mcmc_ka <- get_stats(b_samples[, "kappa"], kappa_true)
-  mcmc_time <- t1 - t0
+## A simple example for MPS to help you draw graphies in the paper
 
-  
-  mart_res <- lapply(m_vals, function(m) {
-    t2 <- proc.time()[3]
-    chains <- run_predresamp_vmf(data$X, B = B, M = m, n_cores = n_cores)
-    t3 <- proc.time()[3]
-    mu_sam <- chains$sample$mu_sam
-    ka_sam <- chains$sample$kappa_sam
-    list(
-      mu = get_stats(mu_sam, mu_true),
-      ka = get_stats(ka_sam, kappa_true),
-      time = t3 - t2
-    )
-  })
-  
-  list(
-    mcmc = list(mu = stats_mcmc_mu, ka = stats_mcmc_ka, time = mcmc_time),
-    mart = mart_res
+Though $\texttt{bayesdir::run_predresamp_vmf()}$ in $\texttt{bayesdir()}$
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+X <- data$X
+nn_cores <- max(detectCores()-1,1)
+res_mart <- bayesdir::run_predresamp_vmf(X,B=500,M=1000,n_cores = nn_cores)
+
+kappa_mart <- res_mart$sample$kappa_sam
+mu_mart <- res_mart$sample$mu_sam
+```
+
+Visualize Result after fitting data,
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+kappa_den <- density(kappa_mart)
+plot(kappa_den,main = "Posterior density of kappa", xlab = "kappa",
+         col = "steelblue", lwd = 2)
+abline(v = kappa_true,lty=4,col = "red")
+
+
+mu_den <- density(mu_mart)
+plot(mu_den,main = "Posterior density of mu", xlab = "mu",
+         col = "steelblue", lwd = 2)
+abline(v = mu_true,lty=4,col = "red")
+```
+
+For simplicity, we only perform correction on last point in $\texttt{bayesdir::run_predresamp_vmf()}$. and $\texttt{bayesdir::run_single_martingale()}$. So to draw similar graphes with the paper, a modified functions are needed, as $\texttt{run_cor_mart()}$, $\texttt{run_cor_predresamp_vmf()}$.(If you do not want to recap this part, just ignore it.)
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+#' Run a single martingale posterior chain (no preconditioner).
+#' @param c0 initial natural parameter vector (use MLE)
+#' @param N number of observed data points
+#' @param M number of iteration
+#' @param save_path logical, if TRUE the corrected chain is also returned
+run_cor_martingale <- function(c0, N, M = 1000, save_path = TRUE) {
+  p <- length(c0)
+  c_curr <- c0            # working chain (uncorrected)
+  V_mat <- matrix(0, p, p)
+  total_w <- 0
+
+  if (save_path) {
+    x_chain <- matrix(0, p, M)
+    c_chain <- matrix(0, p, M)   # will store corrected values
+  }
+
+  # function for stable inversion
+  safe_sym_inverse <- function(M, tol = 1e-10) {
+    eig <- eigen((M + t(M)) / 2, symmetric = TRUE)
+    vals_inv <- 1 / pmax(eig$values, tol)
+    eig$vectors %*% diag(vals_inv) %*% t(eig$vectors)
+  }
+
+  # main loop
+  for (t in 1:M) {
+    # generate new observation
+    x_new <- rstiefel::rmf.vector(c_curr)
+    s <- score_fn(c_curr, x_new, p)
+    wt <- 1 / (t + N - 1)
+    total_w <- total_w + wt^2
+    V_mat <- V_mat + wt^2 * get_FIM_vmf(c_curr, p)
+    # update the working parameter (no correction)
+    c_curr <- c_curr + wt * s
+
+    if (save_path) {
+      x_chain[, t] <- x_new
+      # correct the current c_curr using accumulated information
+      A_t <- total_w * safe_sym_inverse(V_mat, tol = 1e-10)
+      c_curr_corrected <- c0 + A_t %*% (c_curr - c0)
+      c_chain[, t] <- c_curr_corrected
+    }
+  }
+
+  # final correction (same as before)
+  delta <- c_curr - c0
+  A <- total_w * safe_sym_inverse(V_mat, tol = 1e-10)
+  c_final <- c0 + A %*% delta
+
+  # convert to polar coordinates (for p = 2)
+  kappa_final <- sqrt(sum(c_final^2))
+  if (p == 2) {
+    mu_final <- atan2(c_final[2], c_final[1])
+    if (mu_final < 0) mu_final <- mu_final + 2 * pi
+  } else {
+    mu_final <- (1 / kappa_final) * c_final
+  }
+
+  res <- list(
+    c_final     = c_final,
+    mu_final    = mu_final,
+    kappa_final = kappa_final
   )
+  if (save_path) {
+    res$x_chain <- x_chain
+    res$c_chain <- c_chain
+  }
+  return(res)
 }
 
+run_cor_predresamp_vmf <- function(X,B = 5000, M = 1000, n_cores = 1,return_chains = TRUE){
+  
+  n  <- ncol(X)
+  p  <- nrow(X)
+  c0 <- mle_vmf(X)
+  
+  
+  chains <- parallel::mclapply(1:B, function(b) {
+    run_cor_martingale(c0 = c0, N = n, M = M, save_path = return_chains)
+  }, mc.cores = n_cores)
+  
+  c_sam <- sapply(chains, `[[`, "c_final")
+  kappa_sam <-sapply(chains,`[[`, "kappa_final")
+  mu_sam <-sapply(chains,`[[`, "mu_final")
+  
+  sample_list <- list(
+    c_sam     = c_sam,
+    mu_sam    = mu_sam,
+    kappa_sam = kappa_sam
+  )
 
+  out <- list(sample = sample_list)
+  if (return_chains) {
+    out$chain <- chains
+  }
+  
+  out
+}
+```
 
-run_simulation_study <- function(n, m_vals, n_sim = 500, B = 2000,
-                                 mu_true = 2, kappa_true = 4,
-                                 prior = list(c = 0, R0 = 0, mu0 = 0),
-                                 n_cores = 1, seed = 2026,
-                                 save_dir = “single_n_simulation”,       
-                                 save_interval = n_sim/5) {  
+plot function
+
+```{r}
+plot_trace_sideways_density <- function(
+    paths,
+    samples,
+    iter = NULL,
+    ref_value = NULL,
+    ref_density_fun = NULL,
+    xlab = "Forward step i",
+    ylab = expression(hat(mu)[n+i]),
+    main = NULL,
+    trace_col = rgb(0.25, 0.45, 0.75, 0.06),
+    trace_lwd = 0.5,
+    density_fill = rgb(0.25, 0.45, 0.75, 0.30),
+    density_border = rgb(0.20, 0.35, 0.65),
+    density_lwd = 1.2,
+    ref_col = "red",
+    ref_lwd = 1.5,
+    ref_lty = 2,
+    ref_density_col = "red",
+    ref_density_lwd = 2,
+    density_width_frac = 0.22,
+    density_x_offset_frac = 1.02,
+    xlim_multiplier = 1.25,
+    y_pad_frac = 0.04,
+    cex_lab = 1.2,
+    cex_axis = 1.0,
+    cex_main = 1.2,
+    cex_leg = 0.9,
+    legend_pos = "topleft",
+    show_legend = TRUE,
+    show_traj_legend = FALSE,
+    mark_initial = TRUE,
+    initial_col = "red",
+    initial_pch = 19,
+    initial_cex = 1.2,
+    initial_label = "initial point",
+    n_value = 500,
+    n_pos = "bottomright",
+    n_cex = 0.8,
+    n_col = "gray40",
+    n_pad_x = 0.02,   # 相对绘图宽度的向左偏移比例
+    n_pad_y = 0.03    # 相对绘图高度的向上偏移比例
+) {
+  if (!is.matrix(paths)) paths <- as.matrix(paths)
+  if (!is.numeric(paths)) stop("`paths` must be numeric.")
+  if (!is.numeric(samples)) stop("`samples` must be numeric.")
+
+  if (is.null(iter)) iter <- seq_len(ncol(paths)) - 1
+  if (length(iter) != ncol(paths)) {
+    stop("`iter` must have length equal to `ncol(paths)`.")
+  }
+
+  x_start <- min(iter)
+  x_end <- max(iter)
+  x_width <- x_end - x_start
+  if (x_width <= 0) stop("`iter` must span a positive range.")
+
+  y_range <- range(c(as.vector(paths), samples, ref_value), finite = TRUE)
+  y_pad <- y_pad_frac * diff(y_range)
+  if (!is.finite(y_pad) || y_pad == 0) y_pad <- 0.1
+  y_range <- y_range + c(-y_pad, y_pad)
+
+  dens <- density(samples, n = 512)
+  y_grid <- seq(y_range[1], y_range[2], length.out = 500)
+
+  ref_density <- NULL
+  if (!is.null(ref_density_fun)) ref_density <- ref_density_fun(y_grid)
+
+  dens_scale <- x_width * density_width_frac / max(dens$y, ref_density, na.rm = TRUE)
+  x_offset <- x_start + x_width * density_x_offset_frac
+  x_max <- x_start + x_width * xlim_multiplier
+
+  plot(
+    NULL,
+    xlim = c(x_start, x_max),
+    ylim = y_range,
+    xlab = "",
+    ylab = ylab,
+    main = main,
+    xaxt = "n",
+    cex.lab = cex_lab,
+    cex.axis = cex_axis,
+    cex.main = cex_main
+  )
+
+  ticks <- pretty(c(x_start, x_end))
+  ticks <- ticks[ticks >= x_start & ticks <= x_end]
+  axis(1, at = ticks, labels = ticks, lwd = 0, lwd.ticks = 1, cex.axis = cex_axis)
+  usr <- par("usr")
+  segments(x_start, usr[3], x_end, usr[3], xpd = FALSE)
+  mtext(xlab, side = 1, line = 2.8, at = (x_start + x_end) / 2, cex = cex_lab)
+
+  for (i in seq_len(nrow(paths))) {
+    lines(iter, paths[i, ], col = trace_col, lwd = trace_lwd)
+  }
+
+  if (!is.null(ref_value)) {
+    abline(h = ref_value, col = ref_col, lwd = ref_lwd, lty = ref_lty)
+  }
+
+  polygon(
+    x_offset + dens$y * dens_scale,
+    dens$x,
+    col = density_fill,
+    border = density_border,
+    lwd = density_lwd
+  )
+
+  if (!is.null(ref_density)) {
+    lines(
+      x_offset + ref_density * dens_scale,
+      y_grid,
+      col = ref_density_col,
+      lwd = ref_density_lwd
+    )
+  }
+
+  segments(x_offset, y_range[1], x_offset, y_range[2],
+           col = "gray60", lty = 3, lwd = 0.8)
+
+  if (mark_initial) {
+    init_x <- iter[1]
+    init_y <- paths[1, 1]
+    points(init_x, init_y, col = initial_col, pch = initial_pch, cex = initial_cex)
+  }
+
+  # 样本量 N 标注（带微调偏移）
+  if (!is.null(n_value)) {
+    usr <- par("usr")   # c(xmin, xmax, ymin, ymax)
+    x_range <- usr[2] - usr[1]
+    y_range_cur <- usr[4] - usr[3]
+
+    if (n_pos == "bottomright") {
+      x_pos <- usr[2] - x_range * n_pad_x   
+      y_pos <- usr[3] + y_range_cur * n_pad_y   
+      adj <- c(1, 0)
+    } else if (n_pos == "bottomleft") {
+      x_pos <- usr[1] + x_range * n_pad_x
+      y_pos <- usr[3] + y_range_cur * n_pad_y
+      adj <- c(0, 0)
+    } else {
+      warning("n_pos should be 'bottomright' or 'bottomleft'. Defaulting to bottomright.")
+      x_pos <- usr[2] - x_range * n_pad_x
+      y_pos <- usr[3] + y_range_cur * n_pad_y
+      adj <- c(1, 0)
+    }
+
+    text(x = x_pos, y = y_pos, labels = paste0("n = ", n_value),
+         adj = adj, cex = n_cex, col = n_col)
+  }
+
+  if (show_legend) {
+    leg_text <- c("True value", "MPS density", "MCMC density")
+    leg_col  <- c(ref_col, density_border, ref_density_col)
+    leg_lty  <- c(ref_lty, 1, 1)
+    leg_lwd  <- c(ref_lwd, density_lwd, ref_density_lwd)
+    leg_pch  <- c(NA, 15, NA)
+    leg_pt.cex <- c(NA, 1.5, NA)
+
+    if (show_traj_legend) {
+      leg_text <- c("MPS trajectories", leg_text)
+      leg_col  <- c(adjustcolor(trace_col, alpha.f = 0.6), leg_col)
+      leg_lty  <- c(1, leg_lty)
+      leg_lwd  <- c(1.5, leg_lwd)
+      leg_pch  <- c(NA, leg_pch)
+      leg_pt.cex <- c(NA, leg_pt.cex)
+    }
+
+    if (mark_initial) {
+      leg_text <- c(leg_text, initial_label)
+      leg_col  <- c(leg_col, initial_col)
+      leg_lty  <- c(leg_lty, NA)
+      leg_lwd  <- c(leg_lwd, NA)
+      leg_pch  <- c(leg_pch, initial_pch)
+      leg_pt.cex <- c(leg_pt.cex, 1.2)
+    }
+
+    legend(
+      legend_pos,
+      legend = leg_text,
+      col    = leg_col,
+      lty    = leg_lty,
+      lwd    = leg_lwd,
+      pch    = leg_pch,
+      pt.cex = leg_pt.cex,
+      bty    = "n",
+      cex    = cex_leg
+    )
+  }
+
+  invisible(list(
+    density = dens,
+    y_range = y_range,
+    x_offset = x_offset,
+    dens_scale = dens_scale
+  ))
+}
+```
+
+Example for drawing graphes.
+
+```{r}
+
+set.seed(2026) #for n=100,500
+
+#Settings
+nn_cores <- max(detectCores()-1,1)
+mu_true <- 2
+kappa_true <- 4
+n <- 500 # use n=500 for another graph
+data <- generate_vmf_data(n, mu_true = mu_true, kappa_true = kappa_true)
+
+#MCMC
+res_MCMC <- fit_mcmc_vmf(data$theta,n_iter=7000,burn = 5000)
+kappa_MCMC <- res_MCMC[,2]
+kappa_den <- density(kappa_MCMC)
+ref_fun <- approxfun(kappa_den$x, kappa_den$y, yleft = 0, yright = 0)
+
+#MPS
+cor_res <- run_cor_predresamp_vmf(data$X, B = 2000, M = 1000, n_cores = nn_cores, return_chains = TRUE)
+kappa_paths <- t(sapply(cor_res$chain, function(chain) {
+  sqrt(colSums(chain$c_chain^2))
+}))
+c0 <- bayesdir::mle_vmf(data$X)   
+kappa0 <- sqrt(sum(c0^2))
+kappa_paths_with_init <- cbind(kappa0, kappa_paths)
+kappa_last <- kappa_paths_with_init[, ncol(kappa_paths_with_init)]
+
+#Draw graph, Finally!
+plot_trace_sideways_density(
+  paths          = kappa_paths_with_init,
+  samples        = kappa_last,          
+  iter           = 1:1001,
+  ref_value      = kappa_true,          
+  ref_density_fun = ref_fun,            
+  ref_density_col = "blue",             
+  ref_density_lwd = 2,                  
+  xlab = "Forward step",
+  ylab = "kappa",
+  cex_leg = 0.7,
+  n_value = n,
+  n_cex = 0.9
+)
+
+```
+
+## Comparison between MCMC and MPS Method.
+
+As usual, here first give out the function.
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+#' Compare MCMC method with Bayesdir method.
+#' @param n number of observations
+#' @param n_sim number of simulation
+#' @param mu_true,kappa_true ground truth
+#' @param B number of samples from each sampler
+#' @param M length of each martingale in MPS
+#' @param prior prior in MCMC method
+#' @param n_cores number of cores you can occupy
+#' @param save_dir,save_interval out of safety, save result in xxx each xxx times.
+sim_compare_vmf <- function(n, n_sim = 1000,
+                            mu_true = 2, kappa_true = 4,
+                            B = 5000, M = 1000,
+                            prior = list(c = 0, R0 = 0, mu0 = 0),
+                            seed = 1234, n_cores = 1,
+                            save_dir = "sim_results",
+                            save_interval = n_sim/5) {
+  
   
   if (!dir.exists(save_dir)) {
     dir.create(save_dir, recursive = TRUE)
   }
-  n_m <- length(m_vals)
-  start_time <- Sys.time() 
-
   
-  mcmc_mu_cover <- mcmc_ka_cover <- 0
-  mcmc_mu_len <- mcmc_ka_len <- 0
-  mcmc_mu_var <- mcmc_ka_var <- 0
-  mcmc_time <- 0
-
-  mart_mu_cover <- mart_ka_cover <- rep(0, n_m)
-  mart_mu_len <- mart_ka_len <- rep(0, n_m)
-  mart_mu_var <- mart_ka_var <- rep(0, n_m)
-  mart_time <- rep(0, n_m)
-
+  set.seed(seed)
   
-  res_list_mcmc <- vector("list", n_sim)
-  res_list_mart <- vector("list", n_sim)
-
   
-  pb <- txtProgressBar(min = 0, max = n_sim, style = 3, width = 50, char = "=")
-
+  get_stats <- function(samples, true_val) {
+    ci <- quantile(samples, probs = c(0.025, 0.975))
+    list(
+      cover = as.numeric(true_val >= ci[1] && true_val <= ci[2]),
+      len = as.numeric(ci[2] - ci[1]),
+      est = var(samples) 
+    )
+  }
   
+  pb <- txtProgressBar(min = 0, max = n_sim, style = 3, 
+                       label = "Simulation Progress: ")
+  
+  start_time <- Sys.time()
+  res_mart <- vector("list", n_sim)
+  res_bayes <- vector("list", n_sim)
+
   for (i in 1:n_sim) {
     
-    res <- sim_one_round(n, mu_true, kappa_true, m_vals, B, prior,
-                         n_cores = n_cores, seed_offset = seed + i)
-
-  
-    res_list_mcmc[[i]] <- res$mcmc
-    res_list_mart[[i]] <- res$mart
-
+    # Generate Data
+    data <- generate_vmf_data(n, mu_true, kappa_true)
     
-    mcmc_mu_cover <- mcmc_mu_cover + res$mcmc$mu$cover
-    mcmc_ka_cover <- mcmc_ka_cover + res$mcmc$ka$cover
-    mcmc_mu_len   <- mcmc_mu_len   + res$mcmc$mu$len
-    mcmc_ka_len   <- mcmc_ka_len   + res$mcmc$ka$len
-    mcmc_mu_var   <- mcmc_mu_var   + res$mcmc$mu$var
-    mcmc_ka_var   <- mcmc_ka_var   + res$mcmc$ka$var
-    mcmc_time     <- mcmc_time     + res$mcmc$time
-
+    # --- Martingale Posterior ---
+    t0 <- proc.time()[3]
+    m_chains <- run_predresamp_vmf(data$X, B = B, M = M, n_cores = n_cores)
+    t1 <- proc.time()[3]
     
-    for (j in 1:n_m) {
-      mart_mu_cover[j] <- mart_mu_cover[j] + res$mart[[j]]$mu$cover
-      mart_ka_cover[j] <- mart_ka_cover[j] + res$mart[[j]]$ka$cover
-      mart_mu_len[j]   <- mart_mu_len[j]   + res$mart[[j]]$mu$len
-      mart_ka_len[j]   <- mart_ka_len[j]   + res$mart[[j]]$ka$len
-      mart_mu_var[j]   <- mart_mu_var[j]   + res$mart[[j]]$mu$var
-      mart_ka_var[j]   <- mart_ka_var[j]   + res$mart[[j]]$ka$var
-      mart_time[j]     <- mart_time[j]     + res$mart[[j]]$time
-    }
+    m_mu <- get_stats(m_chains$sample$mu_sam, mu_true)
+    m_ka <- get_stats(m_chains$sample$kappa_sam, kappa_true)
+    
+    res_mart[[i]] <- data.frame(
+      c_mu = m_mu$cover, l_mu = m_mu$len, e_mu = m_mu$est,
+      c_ka = m_ka$cover, l_ka = m_ka$len, e_ka = m_ka$est,
+      time = t1 - t0
+    )
 
+    # --- Bayes MCMC ---
+    t2 <- proc.time()[3]
+    b_samples <- fit_mcmc_vmf(data$theta, prior, n_iter = B + 5000, burn = 5000)
+    t3 <- proc.time()[3]
+    
+    b_mu <- get_stats(b_samples[, "mu"], mu_true)
+    b_ka <- get_stats(b_samples[, "kappa"], kappa_true)
+    
+    res_bayes[[i]] <- data.frame(
+      c_mu = b_mu$cover, l_mu = b_mu$len, e_mu = b_mu$est,
+      c_ka = b_ka$cover, l_ka = b_ka$len, e_ka = b_ka$est,
+      time = t3 - t2
+    )
+    
     setTxtProgressBar(pb, i)
+
     
-    
-    if (!is.null(save_dir) && (i %% save_interval == 0)) {
-      if (!dir.exists(save_dir)) dir.create(save_dir, recursive = TRUE)
-      
+    if (i %% save_interval == 0) {
       temp_res <- list(
-        mart_history = res_list_mart[1:i], 
-        mcmc_history = res_list_mcmc[1:i],
+        mart = res_mart[1:i], 
+        bayes = res_bayes[1:i],
         current_index = i,
-        params = list(n=n, mu_true=mu_true, kappa_true=kappa_true, m_vals=m_vals)
+        params = list(n=n, mu_true=mu_true, kappa_true=kappa_true),
+        save_time = Sys.time()
       )
-      
       file_name <- file.path(save_dir, paste0("backup_iter_", i, ".rds"))
       saveRDS(temp_res, file = file_name)
-      
-      
-      cur_time <- Sys.time()
-      elapsed <- as.numeric(difftime(cur_time, start_time, units = "mins"))
-      avg_time <- elapsed / i
-      eta <- avg_time * (n_sim - i)
-      
-      message(sprintf("\n[Checkpoint] Saved at %s | Elapsed: %.1f min | ETA: %.1f min (Finish at %s)", 
-                      format(cur_time, "%H:%M:%S"), 
-                      elapsed, 
-                      eta, 
-                      format(cur_time + eta * 60, "%H:%M")))
+      message(sprintf("\n[Checkpoint] Saved at %s | Elapsed: %.1f mins | ETA: %.1f mins (Finish approx. %s)", 
+                format(Sys.time(), "%H:%M:%S"), 
+                as.numeric(difftime(Sys.time(), start_time, units = "mins")), 
+                (as.numeric(difftime(Sys.time(), start_time, units = "mins")) / i) * (n_sim - i), 
+                format(Sys.time() + ((as.numeric(difftime(Sys.time(), start_time, units = "secs")) / i) * (n_sim - i)), "%H:%M")))
     }
   }
-
+  
   close(pb)
 
-  
-  mcmc_row <- data.frame(
-    n = n, m = NA, lambda = NA, rho = NA,
-    Method = "MCMC",
-    Cov_mu  = 100 * mcmc_mu_cover / n_sim,
-    Len_mu  = mcmc_mu_len / n_sim,
-    Cov_ka  = 100 * mcmc_ka_cover / n_sim,
-    Len_ka  = mcmc_ka_len / n_sim,
-    Var_mu  = mcmc_mu_var / n_sim,
-    Var_ka  = mcmc_ka_var / n_sim,
-    Time    = mcmc_time / n_sim
+  df_mart <- do.call(rbind, res_mart)
+  df_bayes <- do.call(rbind, res_bayes)
+
+  summarize_res <- function(df) {
+    data.frame(
+      n = n,
+      Cov_mu  = mean(df$c_mu) * 100,
+      Len_mu  = mean(df$l_mu),
+      Max_Var_mu  = max(df$e_mu),  
+      Cov_ka  = mean(df$c_ka) * 100,
+      Len_ka  = mean(df$l_ka),
+      Max_Var_ka  = max(df$e_ka), 
+      Mean_Time = mean(df$time)
+    )
+  }
+
+  final_summary <- rbind(
+    cbind(Method = "Martingale", summarize_res(df_mart)),
+    cbind(Method = "BayesMCMC", summarize_res(df_bayes))
   )
 
-  mart_rows <- do.call(rbind, lapply(1:n_m, function(j) {
-    m <- m_vals[j]
-    lambda <- m / n
-    rho <- 1 - 1 / (1 + lambda)
-    data.frame(
-      n = n, m = m, lambda = lambda, rho = rho,
-      Method = "Martingale",
-      Cov_mu  = 100 * mart_mu_cover[j] / n_sim,
-      Len_mu  = mart_mu_len[j] / n_sim,
-      Cov_ka  = 100 * mart_ka_cover[j] / n_sim,
-      Len_ka  = mart_ka_len[j] / n_sim,
-      Var_mu  = mart_mu_var[j] / n_sim,
-      Var_ka  = mart_ka_var[j] / n_sim,
-      Time    = mart_time[j] / n_sim
-    )
-  }))
-
-  return(rbind(mcmc_row, mart_rows))
+  return(final_summary)
 }
-
-
 ```
+
+As an simple example,
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-
-set.seed(1234)
-n_cores <- max(1, detectCores() - 1)
-n_sim   <- 2000   
-
-
-grid_def <- list(
-  "100" = c(20, 50, 100, 200, 500, 2000),
-  "400" = c(40, 200, 400, 1000, 4000)
-)
-
-all_results <- list()
-for (n_str in names(grid_def)) {
-  n <- as.numeric(n_str)
-  m_vals <- grid_def[[n_str]]
-  cat(sprintf("\n===== Running n = %d =====\n", n))
-  res <- run_simulation_study(
-    n = n, m_vals = m_vals, n_sim = n_sim,
-    B = 2000, n_cores = n_cores
-  )
-  all_results[[n_str]] <- res
-  saveRDS(res, file = paste0("results_n", n, ".rds"))
-}
-
-
-final_table <- do.call(rbind, all_results)
-saveRDS(final_table, "final_simulation_summary.rds")
-write.csv(final_table, "final_simulation_summary.csv", row.names = FALSE)
-
-print(final_table)
+getwd()
+setwd(".") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
+nn_cores <- max(detectCores()-1,1)
+res <- sim_compare_vmf(n=100,n_sim=500,B=500,M=1000,n_cores = nn_cores)
 ```
 
+As for code in the paper,
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+getwd()
+setwd(".") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
+nn_cores <- max(detectCores()-1,1)
+res500 <- sim_compare_vmf(n=500,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res500, file = "vmf_simulation_results.RData")
+
+res200 <- sim_compare_vmf(n=200,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res500, file = "vmf_simulation_results.RData")
+
+res100 <- sim_compare_vmf(n=100,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res500, file = "vmf_simulation_results.RData")
+
+res10 <- sim_compare_vmf(n=10,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res500, file = "vmf_simulation_results.RData")
+```
