@@ -169,24 +169,25 @@ package are both created using one simple command:</p>
 <span id="cb1-2"><a href="index.html#cb1-2" tabindex="-1"></a><span class="do">## install.packages("./bayesdir/", repos = NULL, type="source") </span></span></code></pre></div>
 <p>This line is purely for testing (to be deleted later!).</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="index.html#cb2-1" tabindex="-1"></a><span class="co"># Complete development workflow</span></span>
-<span id="cb2-2"><a href="index.html#cb2-2" tabindex="-1"></a><span id="my_load">my_load</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(){</span>
-<span id="cb2-3"><a href="index.html#cb2-3" tabindex="-1"></a>  litr<span class="sc">::</span><span class="fu">render</span>(<span class="st">"index.Rmd"</span>,  </span>
-<span id="cb2-4"><a href="index.html#cb2-4" tabindex="-1"></a>               <span class="at">output_format =</span> litr<span class="sc">::</span><span class="fu">litr_gitbook</span>(<span class="at">minimal_eval =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb2-5"><a href="index.html#cb2-5" tabindex="-1"></a>  devtools<span class="sc">::</span><span class="fu">document</span>(<span class="st">"./bayesdir"</span>)  <span class="co"># Update documentation</span></span>
-<span id="cb2-6"><a href="index.html#cb2-6" tabindex="-1"></a>  devtools<span class="sc">::</span><span class="fu">load_all</span>(<span class="st">"./bayesdir"</span>)</span>
-<span id="cb2-7"><a href="index.html#cb2-7" tabindex="-1"></a>}</span>
-<span id="cb2-8"><a href="index.html#cb2-8" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="index.html#cb2-9" tabindex="-1"></a><a href="index.html#my_load">my_load</a>()</span>
-<span id="cb2-10"><a href="index.html#cb2-10" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="index.html#cb2-11" tabindex="-1"></a><span class="co"># Step 2: Check the package (optional but recommended)</span></span>
-<span id="cb2-12"><a href="index.html#cb2-12" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">check</span>(<span class="st">"./bayesdir"</span>, <span class="at">document =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb2-13"><a href="index.html#cb2-13" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="index.html#cb2-14" tabindex="-1"></a><span class="co"># Step 3: Install the package locally for full installation</span></span>
-<span id="cb2-15"><a href="index.html#cb2-15" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install</span>(<span class="st">"./bayesdir"</span>)</span>
-<span id="cb2-16"><a href="index.html#cb2-16" tabindex="-1"></a></span>
-<span id="cb2-17"><a href="index.html#cb2-17" tabindex="-1"></a><span class="co"># Step 4: Load the installed package (optional, if you want to test installation)</span></span>
-<span id="cb2-18"><a href="index.html#cb2-18" tabindex="-1"></a><span class="fu">library</span>(bayesdir)</span>
-<span id="cb2-19"><a href="index.html#cb2-19" tabindex="-1"></a></span></code></pre></div>
+<span id="cb2-2"><a href="index.html#cb2-2" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">"~/repos/bayesdir/"</span>) </span>
+<span id="cb2-3"><a href="index.html#cb2-3" tabindex="-1"></a><span id="my_load">my_load</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(){</span>
+<span id="cb2-4"><a href="index.html#cb2-4" tabindex="-1"></a>  litr<span class="sc">::</span><span class="fu">render</span>(<span class="st">"index.Rmd"</span>,  </span>
+<span id="cb2-5"><a href="index.html#cb2-5" tabindex="-1"></a>               <span class="at">output_format =</span> litr<span class="sc">::</span><span class="fu">litr_gitbook</span>(<span class="at">minimal_eval =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb2-6"><a href="index.html#cb2-6" tabindex="-1"></a>  devtools<span class="sc">::</span><span class="fu">document</span>(<span class="st">"./bayesdir"</span>)  <span class="co"># Update documentation</span></span>
+<span id="cb2-7"><a href="index.html#cb2-7" tabindex="-1"></a>  devtools<span class="sc">::</span><span class="fu">load_all</span>(<span class="st">"./bayesdir"</span>)</span>
+<span id="cb2-8"><a href="index.html#cb2-8" tabindex="-1"></a>}</span>
+<span id="cb2-9"><a href="index.html#cb2-9" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="index.html#cb2-10" tabindex="-1"></a><a href="index.html#my_load">my_load</a>()</span>
+<span id="cb2-11"><a href="index.html#cb2-11" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="index.html#cb2-12" tabindex="-1"></a><span class="co"># Step 2: Check the package (optional but recommended)</span></span>
+<span id="cb2-13"><a href="index.html#cb2-13" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">check</span>(<span class="st">"./bayesdir"</span>, <span class="at">document =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-14"><a href="index.html#cb2-14" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="index.html#cb2-15" tabindex="-1"></a><span class="co"># Step 3: Install the package locally for full installation</span></span>
+<span id="cb2-16"><a href="index.html#cb2-16" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install</span>(<span class="st">"./bayesdir"</span>)</span>
+<span id="cb2-17"><a href="index.html#cb2-17" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="index.html#cb2-18" tabindex="-1"></a><span class="co"># Step 4: Load the installed package (optional, if you want to test installation)</span></span>
+<span id="cb2-19"><a href="index.html#cb2-19" tabindex="-1"></a><span class="fu">library</span>(bayesdir)</span>
+<span id="cb2-20"><a href="index.html#cb2-20" tabindex="-1"></a></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="index.html#cb3-1" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">"~/repos/bayesdir/"</span>) </span>
 <span id="cb3-2"><a href="index.html#cb3-2" tabindex="-1"></a><span class="do">## 1. Delete the auto-generated _main.Rmd file</span></span>
 <span id="cb3-3"><a href="index.html#cb3-3" tabindex="-1"></a><span class="fu">unlink</span>(<span class="st">"_main.Rmd"</span>)</span>

@@ -174,7 +174,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </h2>
 <p>Used as an benchmark. See Forbes &amp; Mardia (2015) by <span class="math inline">\(\texttt{circglmbayes}\)</span>.</p>
 <p>For the von Mises distribution on <span class="math inline">\([0,2\pi)\)</span>, <span class="math inline">\(f(\theta\mid\mu,\kappa) = \frac{1}{2\pi I_0(\kappa)}\exp\{\kappa\cos(\theta-\mu)\}\)</span>, and conjugate prior <span class="math inline">\(\pi(\mu,\kappa) \propto I_0(\kappa)^{-c}\exp\{\kappa R_0\cos(\mu-\mu_0)\},\)</span> with hyperparameters <span class="math inline">\(c\ge0\)</span>, <span class="math inline">\(R_0\ge0\)</span>, and <span class="math inline">\(\mu_0\)</span>. The resulting joint posterior is<span class="math display">\[\pi(\mu,\kappa\mid\theta_{1:n}) \propto I_0(\kappa)^{-(c+n)}\exp{\kappa R_n\cos(\mu-\bar\theta_n)}\]</span> where the posterior resultant length <span class="math inline">\(R_n\)</span> and mean direction <span class="math inline">\(\bar\theta_n\)</span> are defined by <span class="math inline">\(R_n\cos\bar\theta_n = R_0\cos\mu_0 + \sum_{i=1}^{n}\cos\theta_i\)</span> and <span class="math inline">\(R_n\sin\bar\theta_n = R_0\sin\mu_0 + \sum_{i=1}^{n}\sin\theta_i\)</span>.</p>
-<p>We sample from the posterior using a two‑step Gibbs sampler.<br>
+<p>We sample from the posterior using the Gibbs sampler.<br>
 Given current values <span class="math inline">\((\mu,\kappa)\)</span>,</p>
 <ul>
 <li><p>Draw <span class="math inline">\(\mu\mid\kappa,\theta\)</span> from a von Mises distribution with mean direction <span class="math inline">\(\bar\theta_n\)</span> and concentration <span class="math inline">\(\kappa R_n\)</span>.<br></p></li>
