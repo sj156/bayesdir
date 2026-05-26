@@ -206,11 +206,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb8-44"><a href="helpers-functions.html#cb8-44" tabindex="-1"></a>}</span>
 <span id="cb8-45"><a href="helpers-functions.html#cb8-45" tabindex="-1"></a></span>
 <span id="cb8-46"><a href="helpers-functions.html#cb8-46" tabindex="-1"></a></span>
-<span id="cb8-47"><a href="helpers-functions.html#cb8-47" tabindex="-1"></a><span class="co">#' Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.</span></span>
+<span id="cb8-47"><a href="helpers-functions.html#cb8-47" tabindex="-1"></a><span class="co">#' Helper to compute weights sums</span></span>
 <span id="cb8-48"><a href="helpers-functions.html#cb8-48" tabindex="-1"></a><span class="co">#' @param n number of observed data points</span></span>
 <span id="cb8-49"><a href="helpers-functions.html#cb8-49" tabindex="-1"></a><span class="co">#' @param M number of iterations</span></span>
-<span id="cb8-50"><a href="helpers-functions.html#cb8-50" tabindex="-1"></a><span class="co">#' @export</span></span>
-<span id="cb8-51"><a href="helpers-functions.html#cb8-51" tabindex="-1"></a><span class="co">#' Helper to compute weights sums</span></span>
+<span id="cb8-50"><a href="helpers-functions.html#cb8-50" tabindex="-1"></a><span class="co">#' @return weights of accumlated and remaining</span></span>
+<span id="cb8-51"><a href="helpers-functions.html#cb8-51" tabindex="-1"></a><span class="co">#' @export</span></span>
 <span id="cb8-52"><a href="helpers-functions.html#cb8-52" tabindex="-1"></a><span id="compute_weights">compute_weights</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(n, M) {</span>
 <span id="cb8-53"><a href="helpers-functions.html#cb8-53" tabindex="-1"></a>  t_early <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>M</span>
 <span id="cb8-54"><a href="helpers-functions.html#cb8-54" tabindex="-1"></a>  W_nm <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> (n <span class="sc">+</span> t_early)<span class="sc">^</span><span class="dv">2</span>)</span>

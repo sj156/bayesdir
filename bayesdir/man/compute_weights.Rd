@@ -2,7 +2,7 @@
 % Please edit documentation in R/all-helpers.R
 \name{compute_weights}
 \alias{compute_weights}
-\title{Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.}
+\title{Helper to compute weights sums}
 \usage{
 compute_weights(n, M)
 }
@@ -11,6 +11,9 @@ compute_weights(n, M)
 
 \item{M}{number of iterations}
 }
+\value{
+weights of accumlated and remaining
+}
 \description{
-Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.
+Helper to compute weights sums
 }
