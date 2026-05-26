@@ -2,7 +2,7 @@
 
 This vignette demonstrates a complete simulation study using `bayesdir` on synthetic traffic data from a grid road network.
 
-```{r setup, include = FALSE,eval = FALSE}
+```{r, include = FALSE,eval = FALSE,purl=FALSE}
 library(bayesdir)
 library(ggplot2)
 library(dplyr)
@@ -58,10 +58,10 @@ For the von Mises distribution on $[0,2\pi)$, $f(\theta\mid\mu,\kappa) = \frac{1
 We sample from the posterior using a two‑step Gibbs sampler.\
 Given current values $(\mu,\kappa)$,
 
-- Draw $\mu\mid\kappa,\theta$ from a von Mises distribution with mean direction $\bar\theta_n$ and concentration $\kappa R_n$.\
+-   Draw $\mu\mid\kappa,\theta$ from a von Mises distribution with mean direction $\bar\theta_n$ and concentration $\kappa R_n$.\
 
-- Draw $\kappa\mid\mu,\theta$ from the full conditional $$    \pi(\kappa\mid\mu,\theta) \propto I_0(\kappa)^{-\eta}\exp\{-\eta\beta_0\kappa\},
-    $$ where $\eta = c+n$ and $\beta_0 = -\frac{R_n}{\eta}\cos(\mu-\bar\theta_n)$.
+-   Draw $\kappa\mid\mu,\theta$ from the full conditional $$    \pi(\kappa\mid\mu,\theta) \propto I_0(\kappa)^{-\eta}\exp\{-\eta\beta_0\kappa\},
+      $$ where $\eta = c+n$ and $\beta_0 = -\frac{R_n}{\eta}\cos(\mu-\bar\theta_n)$.
 
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration. Also, $\texttt{theta}$ as an vector with each scalar $\theta_i\in [0, 2\pi]$ and dimension n.
 
@@ -252,7 +252,7 @@ run_cor_predresamp_vmf <- function(X,B = 5000, M = 1000, n_cores = 1,return_chai
 
 plot function
 
-```{r}
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
 plot_trace_sideways_density <- function(
     paths,
     samples,
@@ -453,7 +453,7 @@ plot_trace_sideways_density <- function(
 
 Example for drawing graphes.
 
-```{r}
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
 
 set.seed(2026) #for n=100,500
 
@@ -726,7 +726,7 @@ sim_hybrid_vmf_only <- function(n, n_sim = 1000,
 }
 ```
 
-```{r}
+```{r, include = FALSE,eval = FALSE,purl=FALSE}
 setwd(".") 
 nn_cores <- max(detectCores()-1,1)
 

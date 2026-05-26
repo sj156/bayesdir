@@ -121,7 +121,7 @@ run_predresamp_vmf <- function(X,B = 5000, M = 50, n_cores = 1,return_chains = F
 ```
 
 ## Hybrid Method and related code
-```{r}
+```{r, send_to = 'R/samp.R'}
 #' Run the early path for a single chain (Step 1 of Hybrid Method)
 #' @param c0 initial natural parameter (MLE)
 #' @param n observed sample size

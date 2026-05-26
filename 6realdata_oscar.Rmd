@@ -7,7 +7,7 @@ analysis uses the vMF predictive-resampling functions in our package; the
 small helper routines below only store full trajectories and produce the paper
 figures.
 
-```{r setup, include=FALSE}
+```{r,include = FALSE,eval = FALSE,purl=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE,
   message = FALSE,
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 set.seed(2026)
 ```
 
-```{r packages}
+```{r packages, include = FALSE,eval = FALSE,purl=FALSE}
 library(ggplot2)
 library(cowplot)
 library(parallel)
@@ -58,7 +58,7 @@ for summer and winter, with columns `y1` and `y2` giving unit current-direction
 vectors after rotation to the common reference direction.  For local testing,
 the code also searches the experiment folder used to prepare the paper figures.
 
-```{r paths-and-controls}
+```{r paths-and-controls, include = FALSE,eval = FALSE,purl=FALSE}
 plan_key <- "southern_offshore_compact"
 
 data_dir_candidates <- c(
@@ -98,7 +98,7 @@ rose_inner_radius <- 0.28
 
 ## Helper functions
 
-```{r helpers}
+```{r helpers, include = FALSE,eval = FALSE,purl=FALSE}
 unit_matrix <- function(df) {
   t(as.matrix(df[, c("y1", "y2")]))
 }
@@ -244,7 +244,7 @@ post_correct_array <- function(c_array, N, p = dim(c_array)[2], n_cores = 1) {
 
 ## Load data and compute MLEs
 
-```{r load-data}
+```{r load-data, include = FALSE,eval = FALSE,purl=FALSE}
 summer_df <- read.csv(file.path(data_dir, "summer_subarea.csv"))
 winter_df <- read.csv(file.path(data_dir, "winter_subarea.csv"))
 
@@ -283,7 +283,7 @@ helper uses the same score, Fisher information, and affine variance correction
 as the exported `bayesdir` sampler, but stores the intermediate states needed
 for the trace figure.
 
-```{r run-or-load-results}
+```{r run-or-load-results, include = FALSE,eval = FALSE,purl=FALSE}
 cached_source <- if (file.exists(results_rds)) results_rds else paper_results_rds
 
 if (!rerun_mps && file.exists(cached_source)) {
@@ -333,7 +333,7 @@ knitr::kable(summary_table, caption = "Raw and post-corrected martingale posteri
 
 ## Post-corrected trace plot
 
-```{r trace-plot, fig.width=15, fig.height=5.625}
+```{r trace-plot, fig.width=15, fig.height=5.625, include = FALSE,eval = FALSE,purl=FALSE}
 trace_axis_label_cex <- 1.8
 trace_axis_tick_cex <- 1.6
 trace_legend_location_units <- "npc"
@@ -541,7 +541,7 @@ plot_combined_trace_figure(arr_summer_pc, arr_winter_pc, mle_summer, mle_winter)
 
 ## Rose diagram and angular density
 
-```{r rose-density-figure, fig.width=13.5, fig.height=6.2}
+```{r rose-density-figure, fig.width=13.5, fig.height=6.2, include = FALSE,eval = FALSE,purl=FALSE}
 paper2_season_colors <- c("Summer" = "#2b6cb0", "Winter" = "#dd6b20")
 paper2_hist_alpha <- 0.4
 paper2_band_alpha <- 0.16

@@ -53,11 +53,11 @@ get_FIM_vmf <- function(C, p = length(C)) {
 }
 
 
-#' Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.
+#' Helper to compute weights sums
 #' @param n number of observed data points
 #' @param M number of iterations
+#' @return weights of accumlated and remaining
 #' @export
-#' Helper to compute weights sums
 compute_weights <- function(n, M) {
   t_early <- 1:M
   W_nm <- sum(1 / (n + t_early)^2)
