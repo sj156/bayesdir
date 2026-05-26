@@ -27,8 +27,6 @@ Generate data from von-mises fisher distribution. return in both cartesian coord
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration.
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-#' function to generate sythetic data with p=2
-#' @return 
 generate_vmf_data <- function(n, mu_true, kappa_true) {
   
   eta_true <- kappa_true * c(cos(mu_true), sin(mu_true))
@@ -47,7 +45,7 @@ data <- generate_vmf_data(100, 2, 4)
 
 For p \>2, simply follow $\texttt{rstiefel::rmf.vector}$, below we have an example.
 
-```{r,eval=FALSE,include=FALSE,purl=FALSEr}
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
 X <- replicate(n,rmf.vector(c(1,1,1)))
 ```
 
@@ -68,11 +66,6 @@ Given current values $(\mu,\kappa)$,
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration. Also, $\texttt{theta}$ as an vector with each scalar $\theta_i\in [0, 2\pi]$ and dimension n.
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-#' general MCMC fitter
-#' @param theta data
-#' @param prior list with hyperparameter (assume to be non informative)
-#' @param n_iter,burn number of iteration and burn-in, (n_iter > burn)
-#' @return a (n_iter-burn)x2 matrix where returns (n_iter-burn)  samples.
 fit_mcmc_vmf <- function(theta, prior = list(c = 0, R0 = 0, mu0 = 0), n_iter = 10000, burn = 5000) {
   n <- length(theta)
   C_n <- prior$R0 * cos(prior$mu0) + sum(cos(theta))
@@ -163,11 +156,6 @@ abline(v = mu_true,lty=4,col = "red")
 For simplicity, we only perform correction on last point in $\texttt{bayesdir::run_predresamp_vmf()}$. and $\texttt{bayesdir::run_single_martingale()}$. So to draw similar graphes with the paper, a modified functions are needed, as $\texttt{run_cor_mart()}$, $\texttt{run_cor_predresamp_vmf()}$.(If you do not want to recap this part, just ignore it.)
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-#' Run a single martingale posterior chain (no preconditioner).
-#' @param c0 initial natural parameter vector (use MLE)
-#' @param N number of observed data points
-#' @param M number of iteration
-#' @param save_path logical, if TRUE the corrected chain is also returned
 run_cor_martingale <- function(c0, N, M = 1000, save_path = TRUE) {
   p <- length(c0)
   c_curr <- c0            # working chain (uncorrected)
@@ -515,15 +503,6 @@ plot_trace_sideways_density(
 As usual, here first give out the function.
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
-#' Compare MCMC method with Bayesdir method.
-#' @param n number of observations
-#' @param n_sim number of simulation
-#' @param mu_true,kappa_true ground truth
-#' @param B number of samples from each sampler
-#' @param M length of each martingale in MPS
-#' @param prior prior in MCMC method
-#' @param n_cores number of cores you can occupy
-#' @param save_dir,save_interval out of safety, save result in xxx each xxx times.
 sim_compare_vmf <- function(n, n_sim = 1000,
                             mu_true = 2, kappa_true = 4,
                             B = 5000, M = 1000,
@@ -663,4 +642,86 @@ save(res500, file = "vmf_simulation_results.RData")
 
 res10 <- sim_compare_vmf(n=10,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
 save(res500, file = "vmf_simulation_results.RData")
+```
+
+## Simulation for Hybrid Method
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+sim_hybrid_vmf_only <- function(n, n_sim = 1000,
+                                mu_true = 2, kappa_true = 4,
+                                B = 5000, M = 100,
+                                seed = 1234, n_cores = 1,
+                                save_dir = "hybrid_results",
+                                save_interval = n_sim/5) {
+  
+  if (!dir.exists(save_dir)) dir.create(save_dir, recursive = TRUE)
+  set.seed(seed)
+  
+  # Corrected internal helper
+  get_stats <- function(samples, true_val) {
+    ci <- quantile(samples, probs = c(0.025, 0.975))
+    res <- list(
+      cover = as.numeric(true_val >= ci[1] && true_val <= ci[2]),
+      len   = as.numeric(ci[2] - ci[1]),
+      var   = as.numeric(var(samples))
+    )
+  return(lapply(res, as.numeric))
+  }
+  
+  pb <- txtProgressBar(min = 0, max = n_sim, style = 3)
+  start_time <- Sys.time()
+  res_list <- vector("list", n_sim)
+
+  for (i in 1:n_sim) {
+    # 1. Generate Data
+    data <- generate_vmf_data(n, mu_true, kappa_true)
+    
+    # 2. Run Hybrid Method
+    t0 <- proc.time()[3]
+    h_res <- run_hybrid_vmf(data$X, B = B, M = M, n_cores = n_cores)
+    t1 <- proc.time()[3]
+    
+    # 3. Extract Stats (using the updated get_stats)
+    m_stat <- get_stats(h_res$sample$mu_sam, mu_true)
+    k_stat <- get_stats(h_res$sample$kappa_sam, kappa_true)
+    
+    # Building the data frame now proceeds without warnings
+    res_list[[i]] <- data.frame(
+      c_mu = m_stat$cover, l_mu = m_stat$len, v_mu = m_stat$v,
+      c_ka = k_stat$cover, l_ka = k_stat$len, v_ka = k_stat$v,
+      time = t1 - t0,
+      row.names = NULL # Explicitly setting row.names to NULL as a safeguard
+    )
+    
+    setTxtProgressBar(pb, i)
+    
+    if (i %% save_interval == 0) {
+      saveRDS(res_list[1:i], file.path(save_dir, paste0("backup_", i, ".rds")))
+      message(sprintf("\n[Checkpoint] Saved at %s | Elapsed: %.1f mins | ETA: %.1f mins (Finish approx. %s)", 
+                format(Sys.time(), "%H:%M:%S"), 
+                as.numeric(difftime(Sys.time(), start_time, units = "mins")), 
+                (as.numeric(difftime(Sys.time(), start_time, units = "mins")) / i) * (n_sim - i), 
+                format(Sys.time() + ((as.numeric(difftime(Sys.time(), start_time, units = "secs")) / i) * (n_sim - i)), "%H:%M")))
+    }
+  }
+  close(pb)
+
+  df <- do.call(rbind, res_list)
+  
+  # Final Summary Table
+  summary_table <- data.frame(
+    Method   = "Hybrid_Martingale",
+    n        = n,
+    M        = M,
+    Cov_mu   = mean(df$c_mu) * 100,
+    Len_mu   = mean(df$l_mu),
+    Var_mu   = mean(df$v_mu),
+    Cov_ka   = mean(df$c_ka) * 100,
+    Len_ka   = mean(df$l_ka),
+    Var_ka   = mean(df$v_ka),
+    Avg_Time = mean(df$time)
+  )
+  
+  return(summary_table)
+}
 ```

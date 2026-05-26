@@ -47,13 +47,16 @@ get_FIM_vmf <- function(C, p = length(C)) {
 
 
 #' Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.
-#' @param start starting index (t >= 1)
-#' @param end ending index
-#' @param N number of observed data points
-#' @return scalar value of the sum
+#' @param n number of observed data points
+#' @param M number of iterations
 #' @export
-compute_weight_sum <- function(start, end, N) {
-  sum(1 / ((start:end) + N)^2)
+#' Helper to compute weights sums
+compute_weights <- function(n, M) {
+  t_early <- 1:M
+  W_nm <- sum(1 / (n + t_early)^2)
+  # Infinite sum R_nm = sum_{t=M+1}^\infty 1/(n+t)^2 approx 1/(n+M)
+  R_nm <- 1 / (n + M) 
+  list(W_nm = W_nm, R_nm = R_nm)
 }
 
 #' Compute MLE given data X 

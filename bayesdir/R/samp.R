@@ -26,7 +26,7 @@ run_single_martingale <- function(c0, N, M = 20,save_path = FALSE) {
   
   
   # main loop
-  w_cur <- compute_weight_sum(1, M, N)
+  w_cur <- compute_weights(N,M)$W_nm
   for (t in 1:M) {
       x_new <- rstiefel::rmf.vector(c_curr)
       s <- score_fn(c_curr, x_new, p)
