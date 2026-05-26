@@ -629,7 +629,7 @@ As for code in the paper,
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
 getwd()
-setwd(".") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
+setwd("~/") ## save at root, do not pollute github  
 nn_cores <- max(detectCores()-1,1)
 res500 <- sim_compare_vmf(n=500,n_sim=500,B=500,M=1000,n_cores = nn_cores)
 save(res500, file = "vmf_simulation_results.RData")
@@ -724,7 +724,7 @@ sim_hybrid_vmf_only <- function(n, n_sim = 1000,
 ```
 
 ```{r, include = FALSE,eval = FALSE,purl=FALSE}
-setwd(".") 
+setwd("~/") ## save at root  
 nn_cores <- max(detectCores()-1,1)
 
 res10 <- sim_hybrid_vmf_only(n=10,n_sim=500,B=500,M=100,n_cores = nn_cores)
