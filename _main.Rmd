@@ -1,3 +1,58 @@
+---
+title: "Creating the ``r params$package_name`` R package"
+author: "Sheng Jiang"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+knit: litr::render
+output: litr::litr_gitbook
+params:
+  package_name: "bayesdir" # <-- change this to your package name
+  package_parent_dir: "." # <-- relative to this file's location
+documentclass: book
+---
+
+# Introduction
+
+Placeholder
+
+
+
+<!--chapter:end:index.Rmd-->
+
+
+# Package setup
+
+Placeholder
+
+
+
+<!--chapter:end:1description.Rmd-->
+
+
+# Helpers functions
+
+Placeholder
+
+
+
+<!--chapter:end:2helpers.Rmd-->
+
+# Generating synthetic data {#syntheticdata}
+
+
+<!--chapter:end:3data.Rmd-->
+
+
+# Predictive Resampler 
+
+Placeholder
+
+
+## The main sampler
+## Hybrid Method and related code
+
+<!--chapter:end:4samp.Rmd-->
+
 # Simulation Study: Bayesian vMF models for current direction Data with p=2
 
 This vignette demonstrates a complete simulation study using `bayesdir` on synthetic traffic data from a grid road network.
@@ -55,7 +110,7 @@ Used as an benchmark. See Forbes & Mardia (2015) by $\texttt{circglmbayes}$.
 
 For the von Mises distribution on $[0,2\pi)$, $f(\theta\mid\mu,\kappa) = \frac{1}{2\pi I_0(\kappa)}\exp\{\kappa\cos(\theta-\mu)\}$, and conjugate prior $\pi(\mu,\kappa) \propto I_0(\kappa)^{-c}\exp\{\kappa R_0\cos(\mu-\mu_0)\},$ with hyperparameters $c\ge0$, $R_0\ge0$, and $\mu_0$. The resulting joint posterior is$$\pi(\mu,\kappa\mid\theta_{1:n}) \propto I_0(\kappa)^{-(c+n)}\exp{\kappa R_n\cos(\mu-\bar\theta_n)}$$ where the posterior resultant length $R_n$ and mean direction $\bar\theta_n$ are defined by $R_n\cos\bar\theta_n = R_0\cos\mu_0 + \sum_{i=1}^{n}\cos\theta_i$ and $R_n\sin\bar\theta_n = R_0\sin\mu_0 + \sum_{i=1}^{n}\sin\theta_i$.
 
-We sample from the posterior using the Gibbs sampler.\
+We sample from the posterior using a two‑step Gibbs sampler.\
 Given current values $(\mu,\kappa)$,
 
 -   Draw $\mu\mid\kappa,\theta$ from a von Mises distribution with mean direction $\bar\theta_n$ and concentration $\kappa R_n$.\
@@ -736,3 +791,21 @@ save(res10,res100, file = "vmf_simulation_results.RData")
 res500 <- sim_hybrid_vmf_only(n=500,n_sim=500,B=500,M=100,n_cores = nn_cores)
 save(res500,res100,res10, file = "vmf_simulation_results.RData")
 ```
+
+<!--chapter:end:5simulations.Rmd-->
+
+
+# OSCAR real-data application
+
+Placeholder
+
+
+## Data and tuning
+## Helper functions
+## Load data and compute MLEs
+## Predictive resampling and post-correction
+## Post-corrected trace plot
+## Rose diagram and angular density
+
+<!--chapter:end:6realdata_oscar.Rmd-->
+
