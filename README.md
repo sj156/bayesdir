@@ -20,7 +20,10 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 }
 
 # Install bdynets from GitHub
-devtools::install_github("sj156/bayesdir", subdir = "bayesdir", dependencies = TRUE)
+pak::pak("sj156/bayesdir/bayesdir", dependencies = TRUE)
+
+## `install_github()` was deprecated in devtools 2.5.0. 
+## devtools::install_github("sj156/bayesdir", subdir = "bayesdir", dependencies = TRUE) 
 ```
 
 ## Quick example
