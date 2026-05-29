@@ -132,7 +132,6 @@ summarize_df <- function(res_list, method_name) {
   df <- do.call(rbind, res_list)
   data.frame(
     Method  = method_name,
-    n       = n,
     Cov_mu  = mean(df$c_mu) * 100,
     Len_mu  = mean(df$l_mu),
     Cov_ka  = mean(df$c_ka) * 100,

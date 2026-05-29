@@ -298,14 +298,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb10-21"><a href="helpers-functions.html#cb10-21" tabindex="-1"></a>  df <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, res_list)</span>
 <span id="cb10-22"><a href="helpers-functions.html#cb10-22" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
 <span id="cb10-23"><a href="helpers-functions.html#cb10-23" tabindex="-1"></a>    <span class="at">Method  =</span> method_name,</span>
-<span id="cb10-24"><a href="helpers-functions.html#cb10-24" tabindex="-1"></a>    <span class="at">n       =</span> n,</span>
-<span id="cb10-25"><a href="helpers-functions.html#cb10-25" tabindex="-1"></a>    <span class="at">Cov_mu  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>c_mu) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb10-26"><a href="helpers-functions.html#cb10-26" tabindex="-1"></a>    <span class="at">Len_mu  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>l_mu),</span>
-<span id="cb10-27"><a href="helpers-functions.html#cb10-27" tabindex="-1"></a>    <span class="at">Cov_ka  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>c_ka) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb10-28"><a href="helpers-functions.html#cb10-28" tabindex="-1"></a>    <span class="at">Len_ka  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>l_ka),</span>
-<span id="cb10-29"><a href="helpers-functions.html#cb10-29" tabindex="-1"></a>    <span class="at">Time    =</span> <span class="fu">mean</span>(df<span class="sc">$</span>time)</span>
-<span id="cb10-30"><a href="helpers-functions.html#cb10-30" tabindex="-1"></a>  )</span>
-<span id="cb10-31"><a href="helpers-functions.html#cb10-31" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb10-24"><a href="helpers-functions.html#cb10-24" tabindex="-1"></a>    <span class="at">Cov_mu  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>c_mu) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb10-25"><a href="helpers-functions.html#cb10-25" tabindex="-1"></a>    <span class="at">Len_mu  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>l_mu),</span>
+<span id="cb10-26"><a href="helpers-functions.html#cb10-26" tabindex="-1"></a>    <span class="at">Cov_ka  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>c_ka) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb10-27"><a href="helpers-functions.html#cb10-27" tabindex="-1"></a>    <span class="at">Len_ka  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>l_ka),</span>
+<span id="cb10-28"><a href="helpers-functions.html#cb10-28" tabindex="-1"></a>    <span class="at">Time    =</span> <span class="fu">mean</span>(df<span class="sc">$</span>time)</span>
+<span id="cb10-29"><a href="helpers-functions.html#cb10-29" tabindex="-1"></a>  )</span>
+<span id="cb10-30"><a href="helpers-functions.html#cb10-30" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div id="plot-functions" class="section level2 hasAnchor" number="3.2">
 <h2>
