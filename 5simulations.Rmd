@@ -47,10 +47,10 @@ For the von Mises distribution on $[0,2\pi)$, $f(\theta\mid\mu,\kappa) = \frac{1
 We sample from the posterior using a two‑step Gibbs sampler.\
 Given current values $(\mu,\kappa)$,
 
-- Draw $\mu\mid\kappa,\theta$ from a von Mises distribution with mean direction $\bar\theta_n$ and concentration $\kappa R_n$.\
+-   Draw $\mu\mid\kappa,\theta$ from a von Mises distribution with mean direction $\bar\theta_n$ and concentration $\kappa R_n$.\
 
-- Draw $\kappa\mid\mu,\theta$ from the full conditional $$    \pi(\kappa\mid\mu,\theta) \propto I_0(\kappa)^{-\eta}\exp\{-\eta\beta_0\kappa\},
-    $$ where $\eta = c+n$ and $\beta_0 = -\frac{R_n}{\eta}\cos(\mu-\bar\theta_n)$.
+-   Draw $\kappa\mid\mu,\theta$ from the full conditional $$    \pi(\kappa\mid\mu,\theta) \propto I_0(\kappa)^{-\eta}\exp\{-\eta\beta_0\kappa\},
+      $$ where $\eta = c+n$ and $\beta_0 = -\frac{R_n}{\eta}\cos(\mu-\bar\theta_n)$.
 
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration. Also, $\texttt{theta}$ as an vector with each scalar $\theta_i\in [0, 2\pi]$ and dimension n.
 
@@ -263,7 +263,7 @@ sim_compare_vmf  <- function(n, n_sim = 5000,
     
     # --- A. Martingale: Hybrid (HRS-PC) ---
     t0 <- proc.time()[3]
-    hrs_out <- run_vmf_sampler(data$X, B = B, M = M/10, type = "HRS-PC", cal = "pooled", n_cores = n_cores)
+    hrs_out <- run_predresamp_vmf(data$X, B = B, M = M/10, type = "HRS-PC", cal = "pooled", n_cores = n_cores)
     t1 <- proc.time()[3]
     
     s_mu_hrs <- get_stats(hrs_out$samples$mu_sam, mu_true)
@@ -276,7 +276,7 @@ sim_compare_vmf  <- function(n, n_sim = 5000,
 
     # --- B. Martingale: Standard (RS-PC) ---
     t2 <- proc.time()[3]
-    rs_out <- run_vmf_sampler(data$X, B = B, M = M, type = "RS-PC", cal = "pooled", n_cores = n_cores)
+    rs_out <- run_predresamp_vmf(data$X, B = B, M = M, type = "RS-PC", cal = "pooled", n_cores = n_cores)
     t3 <- proc.time()[3]
     
     s_mu_rs <- get_stats(rs_out$samples$mu_sam, mu_true)
