@@ -350,3 +350,19 @@ save(res500,res100, file = "vmf_simulation_results.RData")
 res10 <- sim_compare_vmf(n=10,n_sim=500,B=500,M=1000,n_cores = nn_cores)
 save(res500,res100,res10, file = "vmf_simulation_results.RData")
 ```
+
+more simulated datasets 
+
+```{r,eval=FALSE,include=FALSE,purl=FALSE}
+getwd()
+setwd("~/") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
+nn_cores <- max(detectCores()-1,1)
+res500 <- sim_compare_vmf(n=500,n_sim=5000,B=500,M=1000,n_cores = nn_cores)
+save(res500, file = "vmf_simulation_results.RData")
+
+res100 <- sim_compare_vmf(n=100,n_sim=5000,B=500,M=1000,n_cores = nn_cores)
+save(res500,res100, file = "vmf_simulation_results.RData")
+
+res10 <- sim_compare_vmf(n=10,n_sim=5000,B=500,M=1000,n_cores = nn_cores)
+save(res500,res100,res10, file = "vmf_simulation_results.RData")
+```
