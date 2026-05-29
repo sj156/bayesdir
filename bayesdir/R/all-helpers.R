@@ -46,10 +46,9 @@ get_FIM_vmf <- function(C, p = length(C)) {
 }
 
 
-#' Helper to compute weights sums
+#' Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.
 #' @param n number of observed data points
 #' @param M number of iterations
-#' @return weights of accumlated and remaining
 #' @export
 compute_weights <- function(n, M) {
   t_early <- 1:M
@@ -57,6 +56,32 @@ compute_weights <- function(n, M) {
   # Infinite sum R_nm = sum_{t=M+1}^\infty 1/(n+t)^2 approx 1/(n+M)
   R_nm <- 1 / (n + M) 
   list(W_nm = W_nm, R_nm = R_nm)
+}
+
+#' compute inverse for squared matrix
+#' @param M matrix
+#' @param tol tolerence erro
+#' @return M^{-1}
+#' @export
+safe_sym_inverse <- function(M, tol = 1e-10) {
+    eig <- eigen((M + t(M)) / 2, symmetric = TRUE)
+    vals_inv <- 1 / pmax(eig$values, tol)
+    eig$vectors %*% diag(vals_inv) %*% t(eig$vectors)
+}
+
+
+#'generate n vmf data when p=2
+#' @param n number of observations
+#' @param mu_true,kappa_true true parameter
+#' @return list containing both cartesian and polara coodinates type.
+#' @export
+generate_vmf_data <- function(n, mu_true, kappa_true) {
+  
+  eta_true <- kappa_true * c(cos(mu_true), sin(mu_true))
+  raw_samples <- replicate(n, rstiefel::rmf.vector(eta_true))[,1,]
+  X_cartesian <- matrix(raw_samples, nrow = 2, ncol = n)
+  theta_rad <- atan2(X_cartesian[2, ], X_cartesian[1, ])
+  list(X = X_cartesian, theta = theta_rad)
 }
 
 #' Compute MLE given data X 
@@ -82,4 +107,169 @@ mle_vmf <- function(X){
   c_hat <- kappa_hat * c(cos(mu_hat), sin(mu_hat))
   
   return(c_hat)
+}
+
+#' Helper to compute statistics (Coverage, Length, Variance)
+#' @param samples samples of parameters on the real line
+#' @param true_val ground truth on real line
+#' @return list contain stats e,g, cover or not, len of confidence interval, variance.
+#' @export
+get_stats <- function(samples, true_val) {
+  ci <- quantile(samples, probs = c(0.025, 0.975))
+  list(
+    cover = as.numeric(true_val >= ci[1] && true_val <= ci[2]),
+    len = as.numeric(ci[2] - ci[1]),
+    est_var = var(samples) )
+}
+
+
+#' Final Summarization
+#' @param rel_list a list containing all samples from all simulations
+#' @param method_name for example, "MCMC".
+#' @return list containing all statistics
+#' @export
+summarize_df <- function(res_list, method_name) {
+  df <- do.call(rbind, res_list)
+  data.frame(
+    Method  = method_name,
+    n       = n,
+    Cov_mu  = mean(df$c_mu) * 100,
+    Len_mu  = mean(df$l_mu),
+    Cov_ka  = mean(df$c_ka) * 100,
+    Len_ka  = mean(df$l_ka),
+    Time    = mean(df$time)
+  )
+}
+
+
+#' Plot Trace Lines with Sideways Density
+#' @param paths A matrix where each row represents a chain's trajectory and each column represents an iteration. 
+#'              If NULL, only the density plot is shown.
+#' @param samples A numeric vector of the final posterior samples used to compute the density.
+#' @param iter A numeric vector for the X-axis iterations. If NULL, defaults to 0:(ncol(paths)-1).
+#' @param ref_value A numeric value for a horizontal reference line (e.g., the true parameter value).
+#' @param ref_density_fun A function that takes a numeric vector and returns density values (e.g., an MCMC benchmark).
+#' @param xlab X-axis label. Defaults to "Forward step i" for traces or "Density" for pure density plots.
+#' @param ylab Y-axis label. Defaults to expression(mu).
+#' @param main Plot title.
+#' @param trace_col Color for the trajectory lines. Usually includes transparency.
+#' @param density_fill Fill color for the sideways density polygon.
+#' @param density_border Border color for the density polygon.
+#' @param ref_density_col Color for the reference density curve.
+#' @param n_value Optional sample size value (currently not used in plot logic).
+#' @param show_right_axis Logical; if TRUE, displays the Y-axis on the right side as well.
+#' @param xlim_multiplier Factor to extend the X-axis to accommodate the sideways density.
+#' @param y_range Manual limits for the Y-axis. If NULL, calculated automatically.
+#' @param mark_initial Logical; if TRUE, marks the starting point of the first chain.
+#' @param initial_col Color for the initial point marker.
+#' @param initial_cex Character expansion (size) for the initial point marker.
+#'
+#' @return No return value, called for side effects (plotting).
+#' @export
+plot_trace_sideways_density <- function(
+    paths = NULL,             
+    samples, 
+    iter = NULL,
+    ref_value = NULL,
+    ref_density_fun = NULL,    
+    xlab = NULL,               
+    ylab = expression(mu),
+    main = NULL,
+    trace_col = rgb(0.25, 0.45, 0.75, 0.06),
+    density_fill = rgb(0.25, 0.45, 0.75, 0.30),
+    density_border = rgb(0.20, 0.35, 0.65),
+    ref_density_col = "red",   
+    n_value = NULL,
+    show_right_axis = FALSE,
+    xlim_multiplier = 1.25,
+    y_range = NULL,           
+    mark_initial = TRUE,      
+    initial_col = "red",      
+    initial_cex = 1.2 
+) {
+  # --- 1. Data Handling: Securely process paths and iterations ---
+  if (!is.null(paths)) {
+    if (!is.matrix(paths)) paths <- as.matrix(paths)
+    if (is.null(iter)) iter <- seq_len(ncol(paths)) - 1
+    
+    x_start <- min(iter)
+    x_end <- max(iter)
+    x_width <- x_end - x_start
+    # Offset where the density plot begins (just to the right of the traces)
+    x_offset <- x_start + x_width * 1.02
+    current_xlab <- ifelse(is.null(xlab), "Forward step i", xlab)
+  } else {
+    # Pure density mode: set up dummy X-axis ranges
+    x_start <- 0
+    x_end <- 0.05 
+    x_width <- 1
+    x_offset <- 0
+    current_xlab <- ifelse(is.null(xlab), "Density", xlab)
+  }
+
+  # Define Y-axis limits
+  if (is.null(y_range)) {
+    y_range <- range(c(if(!is.null(paths)) as.vector(paths), samples, ref_value), finite = TRUE)
+    y_pad <- 0.1 * diff(y_range)
+    y_range <- y_range + c(-y_pad, y_pad)
+  }
+
+  # --- 2. Density Calculation ---
+  dens <- density(samples, n = 512)
+  y_grid <- seq(y_range[1], y_range[2], length.out = 500)
+  ref_dens_vals <- if(!is.null(ref_density_fun)) ref_density_fun(y_grid) else NULL
+  
+  # Scaling: Density takes 25% of width if traces exist, otherwise 90%
+  max_d <- max(c(dens$y, ref_dens_vals), na.rm = TRUE)
+  dens_scale <- if(!is.null(paths)) (x_width * 0.25) / max_d else (x_width * 0.9) / max_d
+  x_max <- if(!is.null(paths)) x_start + x_width * xlim_multiplier else x_width
+
+  # --- 3. Plot Initialization ---
+  plot(NULL, xlim = c(x_start, x_max), ylim = y_range, 
+       xlab = "", ylab = ylab, main = main, xaxt = "n", yaxt = "n", las = 1)
+  
+  # Add Left Y-axis
+  axis(2, las = 1)
+  # Add Right Y-axis if requested
+  if (show_right_axis) axis(4, las = 1)
+
+  # --- 4. Draw X-axis Labels ---
+  if (!is.null(paths)) {
+    ticks <- pretty(c(x_start, x_end))
+    axis(1, at = ticks, labels = ticks)
+    mtext(current_xlab, side = 1, line = 2.5)
+  } else {
+    d_ticks <- pretty(c(0, max_d))
+    axis(1, at = x_offset + d_ticks * dens_scale, labels = d_ticks)
+    mtext(current_xlab, side = 1, line = 2.5)
+  }
+
+  # --- 5. Plot Trajectories ---
+  if (!is.null(paths)) {
+    for (i in seq_len(nrow(paths))) {
+      lines(iter, paths[i, ], col = trace_col, lwd = 0.5)
+    }
+    
+    # Optionally mark the starting point (e.g., MLE or initial guess)
+    if (mark_initial) {
+      points(iter[1], paths[1, 1], col = initial_col, pch = 19, cex = initial_cex)
+    }
+  }
+
+  # --- 6. Plot Densities (Sideways) ---
+  # Draw the main density polygon
+  polygon(x_offset + dens$y * dens_scale, dens$x, 
+          col = density_fill, border = density_border, lwd = 1.2)
+  
+  # Draw the reference density line if provided
+  if (!is.null(ref_dens_vals)) {
+    lines(x_offset + ref_dens_vals * dens_scale, y_grid, 
+          col = ref_density_col, lwd = 2)
+  }
+
+  # Add reference horizontal line (True Value)
+  if (!is.null(ref_value)) abline(h = ref_value, col = "red", lty = 2)
+  
+  # Vertical separator line between trace and density
+  segments(x_offset, y_range[1], x_offset, y_range[2], col = "gray60", lty = 3)
 }

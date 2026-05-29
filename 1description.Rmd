@@ -46,6 +46,7 @@ This package will have some dependancies:
 usethis::use_package("ggplot2", type = "imports")
 usethis::use_package("MASS", type = "imports")
 usethis::use_package("parallel", type = "imports")
+usethis::use_package("pbmcapply",type = "imports")
 usethis::use_package("stats", type = "imports")
 usethis::use_package("rstiefel", type = "imports")
 usethis::use_package("tidyverse", type = "imports")
@@ -57,6 +58,8 @@ usethis::use_pipe(export=TRUE)
 #' @importFrom parallel mclapply
 #' @importFrom stats quantile rnorm sd uniroot
 #' @importFrom rstiefel rmf.vector
+#' @importFrom pbmcapply pbmclapply
+#' @importFrom magrittr %>%
 NULL
 ```
 

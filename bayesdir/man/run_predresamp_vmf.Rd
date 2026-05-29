@@ -2,21 +2,33 @@
 % Please edit documentation in R/samp.R
 \name{run_predresamp_vmf}
 \alias{run_predresamp_vmf}
-\title{run B chains for empirical density}
+\title{Score-Only Martingale Posterior Sampler for vMF}
 \usage{
-run_predresamp_vmf(X, B = 5000, M = 50, n_cores = 1, return_chains = FALSE)
+run_predresamp_vmf(
+  X,
+  B = 5000,
+  M = 50,
+  type = c("HRS-PC", "RS-PC"),
+  cal = c("pooled", "pathwise"),
+  n_cores = 1,
+  save_raw = FALSE
+)
 }
 \arguments{
-\item{X}{data dim = c(p,n)}
+\item{X}{Data matrix (p x n)}
 
-\item{B}{expected sample size}
+\item{B}{Number of chains}
 
-\item{M}{number of iteration}
+\item{M}{Depth M}
 
-\item{n_cores}{number of cores used in mclapply}
+\item{type}{"RS-PC" or "HRS-PC"}
 
-\item{save_chain}{whether to save the entire chain.}
+\item{cal}{"pooled" or "pathwise"}
+
+\item{n_cores}{Number of cores}
+
+\item{save_raw}{Whether to return the raw score paths}
 }
 \description{
-run B chains for empirical density
+Score-Only Martingale Posterior Sampler for vMF
 }

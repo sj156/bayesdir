@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="6 Simulation Study: Bayesian vMF models for current direction Data with p=2 | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-26">
+<meta name="date" content="2026-05-29">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -109,13 +109,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <nav role="navigation"><ul class="summary">
 <li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introduction</a></li>
 <li class="chapter" data-level="2" data-path="package-setup.html"><a href="package-setup.html"><i class="fa fa-check"></i><b>2</b> Package setup</a></li>
-<li class="chapter" data-level="3" data-path="helpers-functions.html"><a href="helpers-functions.html"><i class="fa fa-check"></i><b>3</b> Helpers functions</a></li>
+<li class="chapter" data-level="3" data-path="helpers-functions.html">
+<a href="helpers-functions.html"><i class="fa fa-check"></i><b>3</b> Helpers functions</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="helpers-functions.html"><a href="helpers-functions.html#summarize-functions"><i class="fa fa-check"></i><b>3.1</b> Summarize functions</a></li>
+<li class="chapter" data-level="3.2" data-path="helpers-functions.html"><a href="helpers-functions.html#plot-functions"><i class="fa fa-check"></i><b>3.2</b> Plot Functions</a></li>
+</ul>
+</li>
 <li class="chapter" data-level="4" data-path="syntheticdata.html"><a href="syntheticdata.html"><i class="fa fa-check"></i><b>4</b> Generating synthetic data</a></li>
 <li class="chapter" data-level="5" data-path="predictive-resampler.html">
 <a href="predictive-resampler.html"><i class="fa fa-check"></i><b>5</b> Predictive Resampler</a>
 <ul>
 <li class="chapter" data-level="5.1" data-path="predictive-resampler.html"><a href="predictive-resampler.html#the-main-sampler"><i class="fa fa-check"></i><b>5.1</b> The main sampler</a></li>
-<li class="chapter" data-level="5.2" data-path="predictive-resampler.html"><a href="predictive-resampler.html#hybrid-method-and-related-code"><i class="fa fa-check"></i><b>5.2</b> Hybrid Method and related code</a></li>
 </ul>
 </li>
 <li class="chapter" data-level="6" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html">
@@ -125,7 +130,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#bayesian-inference-on-a-conjugate-prior-with-p2."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior with p=2.</a></li>
 <li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#a-simple-example-for-mps-to-help-you-draw-graphies-in-the-paper"><i class="fa fa-check"></i><b>6.3</b> A simple example for MPS to help you draw graphies in the paper</a></li>
 <li class="chapter" data-level="6.4" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#comparison-between-mcmc-and-mps-method."><i class="fa fa-check"></i><b>6.4</b> Comparison between MCMC and MPS Method.</a></li>
-<li class="chapter" data-level="6.5" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#simulation-for-hybrid-method"><i class="fa fa-check"></i><b>6.5</b> Simulation for Hybrid Method</a></li>
 </ul>
 </li>
 <li class="chapter" data-level="7" data-path="oscar-real-data-application.html">
@@ -174,7 +178,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </h2>
 <p>Used as an benchmark. See Forbes &amp; Mardia (2015) by <span class="math inline">\(\texttt{circglmbayes}\)</span>.</p>
 <p>For the von Mises distribution on <span class="math inline">\([0,2\pi)\)</span>, <span class="math inline">\(f(\theta\mid\mu,\kappa) = \frac{1}{2\pi I_0(\kappa)}\exp\{\kappa\cos(\theta-\mu)\}\)</span>, and conjugate prior <span class="math inline">\(\pi(\mu,\kappa) \propto I_0(\kappa)^{-c}\exp\{\kappa R_0\cos(\mu-\mu_0)\},\)</span> with hyperparameters <span class="math inline">\(c\ge0\)</span>, <span class="math inline">\(R_0\ge0\)</span>, and <span class="math inline">\(\mu_0\)</span>. The resulting joint posterior is<span class="math display">\[\pi(\mu,\kappa\mid\theta_{1:n}) \propto I_0(\kappa)^{-(c+n)}\exp{\kappa R_n\cos(\mu-\bar\theta_n)}\]</span> where the posterior resultant length <span class="math inline">\(R_n\)</span> and mean direction <span class="math inline">\(\bar\theta_n\)</span> are defined by <span class="math inline">\(R_n\cos\bar\theta_n = R_0\cos\mu_0 + \sum_{i=1}^{n}\cos\theta_i\)</span> and <span class="math inline">\(R_n\sin\bar\theta_n = R_0\sin\mu_0 + \sum_{i=1}^{n}\sin\theta_i\)</span>.</p>
-<p>We sample from the posterior using the Gibbs sampler.<br>
+<p>We sample from the posterior using a two‑step Gibbs sampler.<br>
 Given current values <span class="math inline">\((\mu,\kappa)\)</span>,</p>
 <ul>
 <li><p>Draw <span class="math inline">\(\mu\mid\kappa,\theta\)</span> from a von Mises distribution with mean direction <span class="math inline">\(\bar\theta_n\)</span> and concentration <span class="math inline">\(\kappa R_n\)</span>.<br></p></li>
@@ -191,9 +195,7 @@ Given current values <span class="math inline">\((\mu,\kappa)\)</span>,</p>
 </h2>
 <p>Though <span class="math inline">\(\texttt{bayesdir::<a href="predictive-resampler.html#run_predresamp_vmf">run_predresamp_vmf</a>()}\)</span> in <span class="math inline">\(\texttt{bayesdir()}\)</span></p>
 <p>Visualize Result after fitting data,</p>
-<p>For simplicity, we only perform correction on last point in <span class="math inline">\(\texttt{bayesdir::<a href="predictive-resampler.html#run_predresamp_vmf">run_predresamp_vmf</a>()}\)</span>. and <span class="math inline">\(\texttt{bayesdir::<a href="predictive-resampler.html#run_single_martingale">run_single_martingale</a>()}\)</span>. So to draw similar graphes with the paper, a modified functions are needed, as <span class="math inline">\(\texttt{run_cor_mart()}\)</span>, <span class="math inline">\(\texttt{run_cor_predresamp_vmf()}\)</span>.(If you do not want to recap this part, just ignore it.)</p>
-<p>plot function</p>
-<p>Example for drawing graphes.</p>
+<p>So to draw similar graphes with the paper, follow the comment below carefully</p>
 </div>
 <div id="comparison-between-mcmc-and-mps-method." class="section level2 hasAnchor" number="6.4">
 <h2>
@@ -202,11 +204,6 @@ Given current values <span class="math inline">\((\mu,\kappa)\)</span>,</p>
 <p>As usual, here first give out the function.</p>
 <p>As an simple example,</p>
 <p>As for code in the paper,</p>
-</div>
-<div id="simulation-for-hybrid-method" class="section level2 hasAnchor" number="6.5">
-<h2>
-<span class="header-section-number">6.5</span> Simulation for Hybrid Method<a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#simulation-for-hybrid-method" class="anchor-section" aria-label="Anchor link to header"></a>
-</h2>
 
 </div>
 </div>

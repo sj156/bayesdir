@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="3 Helpers functions | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-26">
+<meta name="date" content="2026-05-29">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -109,13 +109,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <nav role="navigation"><ul class="summary">
 <li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introduction</a></li>
 <li class="chapter" data-level="2" data-path="package-setup.html"><a href="package-setup.html"><i class="fa fa-check"></i><b>2</b> Package setup</a></li>
-<li class="chapter" data-level="3" data-path="helpers-functions.html"><a href="helpers-functions.html"><i class="fa fa-check"></i><b>3</b> Helpers functions</a></li>
+<li class="chapter" data-level="3" data-path="helpers-functions.html">
+<a href="helpers-functions.html"><i class="fa fa-check"></i><b>3</b> Helpers functions</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="helpers-functions.html"><a href="helpers-functions.html#summarize-functions"><i class="fa fa-check"></i><b>3.1</b> Summarize functions</a></li>
+<li class="chapter" data-level="3.2" data-path="helpers-functions.html"><a href="helpers-functions.html#plot-functions"><i class="fa fa-check"></i><b>3.2</b> Plot Functions</a></li>
+</ul>
+</li>
 <li class="chapter" data-level="4" data-path="syntheticdata.html"><a href="syntheticdata.html"><i class="fa fa-check"></i><b>4</b> Generating synthetic data</a></li>
 <li class="chapter" data-level="5" data-path="predictive-resampler.html">
 <a href="predictive-resampler.html"><i class="fa fa-check"></i><b>5</b> Predictive Resampler</a>
 <ul>
 <li class="chapter" data-level="5.1" data-path="predictive-resampler.html"><a href="predictive-resampler.html#the-main-sampler"><i class="fa fa-check"></i><b>5.1</b> The main sampler</a></li>
-<li class="chapter" data-level="5.2" data-path="predictive-resampler.html"><a href="predictive-resampler.html#hybrid-method-and-related-code"><i class="fa fa-check"></i><b>5.2</b> Hybrid Method and related code</a></li>
 </ul>
 </li>
 <li class="chapter" data-level="6" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html">
@@ -125,7 +130,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#bayesian-inference-on-a-conjugate-prior-with-p2."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior with p=2.</a></li>
 <li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#a-simple-example-for-mps-to-help-you-draw-graphies-in-the-paper"><i class="fa fa-check"></i><b>6.3</b> A simple example for MPS to help you draw graphies in the paper</a></li>
 <li class="chapter" data-level="6.4" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#comparison-between-mcmc-and-mps-method."><i class="fa fa-check"></i><b>6.4</b> Comparison between MCMC and MPS Method.</a></li>
-<li class="chapter" data-level="6.5" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#simulation-for-hybrid-method"><i class="fa fa-check"></i><b>6.5</b> Simulation for Hybrid Method</a></li>
 </ul>
 </li>
 <li class="chapter" data-level="7" data-path="oscar-real-data-application.html">
@@ -206,18 +210,43 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb8-44"><a href="helpers-functions.html#cb8-44" tabindex="-1"></a>}</span>
 <span id="cb8-45"><a href="helpers-functions.html#cb8-45" tabindex="-1"></a></span>
 <span id="cb8-46"><a href="helpers-functions.html#cb8-46" tabindex="-1"></a></span>
-<span id="cb8-47"><a href="helpers-functions.html#cb8-47" tabindex="-1"></a><span class="co">#' Helper to compute weights sums</span></span>
+<span id="cb8-47"><a href="helpers-functions.html#cb8-47" tabindex="-1"></a><span class="co">#' Compute the sum of weights sum_{t = start}^{end} 1/(t + N)^2.</span></span>
 <span id="cb8-48"><a href="helpers-functions.html#cb8-48" tabindex="-1"></a><span class="co">#' @param n number of observed data points</span></span>
 <span id="cb8-49"><a href="helpers-functions.html#cb8-49" tabindex="-1"></a><span class="co">#' @param M number of iterations</span></span>
-<span id="cb8-50"><a href="helpers-functions.html#cb8-50" tabindex="-1"></a><span class="co">#' @return weights of accumlated and remaining</span></span>
-<span id="cb8-51"><a href="helpers-functions.html#cb8-51" tabindex="-1"></a><span class="co">#' @export</span></span>
-<span id="cb8-52"><a href="helpers-functions.html#cb8-52" tabindex="-1"></a><span id="compute_weights">compute_weights</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(n, M) {</span>
-<span id="cb8-53"><a href="helpers-functions.html#cb8-53" tabindex="-1"></a>  t_early <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>M</span>
-<span id="cb8-54"><a href="helpers-functions.html#cb8-54" tabindex="-1"></a>  W_nm <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> (n <span class="sc">+</span> t_early)<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb8-55"><a href="helpers-functions.html#cb8-55" tabindex="-1"></a>  <span class="co"># Infinite sum R_nm = sum_{t=M+1}^\infty 1/(n+t)^2 approx 1/(n+M)</span></span>
-<span id="cb8-56"><a href="helpers-functions.html#cb8-56" tabindex="-1"></a>  R_nm <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (n <span class="sc">+</span> M) </span>
-<span id="cb8-57"><a href="helpers-functions.html#cb8-57" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">W_nm =</span> W_nm, <span class="at">R_nm =</span> R_nm)</span>
-<span id="cb8-58"><a href="helpers-functions.html#cb8-58" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb8-50"><a href="helpers-functions.html#cb8-50" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb8-51"><a href="helpers-functions.html#cb8-51" tabindex="-1"></a><span id="compute_weights">compute_weights</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(n, M) {</span>
+<span id="cb8-52"><a href="helpers-functions.html#cb8-52" tabindex="-1"></a>  t_early <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span>M</span>
+<span id="cb8-53"><a href="helpers-functions.html#cb8-53" tabindex="-1"></a>  W_nm <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> (n <span class="sc">+</span> t_early)<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb8-54"><a href="helpers-functions.html#cb8-54" tabindex="-1"></a>  <span class="co"># Infinite sum R_nm = sum_{t=M+1}^\infty 1/(n+t)^2 approx 1/(n+M)</span></span>
+<span id="cb8-55"><a href="helpers-functions.html#cb8-55" tabindex="-1"></a>  R_nm <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (n <span class="sc">+</span> M) </span>
+<span id="cb8-56"><a href="helpers-functions.html#cb8-56" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">W_nm =</span> W_nm, <span class="at">R_nm =</span> R_nm)</span>
+<span id="cb8-57"><a href="helpers-functions.html#cb8-57" tabindex="-1"></a>}</span>
+<span id="cb8-58"><a href="helpers-functions.html#cb8-58" tabindex="-1"></a></span>
+<span id="cb8-59"><a href="helpers-functions.html#cb8-59" tabindex="-1"></a><span class="co">#' compute inverse for squared matrix</span></span>
+<span id="cb8-60"><a href="helpers-functions.html#cb8-60" tabindex="-1"></a><span class="co">#' @param M matrix</span></span>
+<span id="cb8-61"><a href="helpers-functions.html#cb8-61" tabindex="-1"></a><span class="co">#' @param tol tolerence erro</span></span>
+<span id="cb8-62"><a href="helpers-functions.html#cb8-62" tabindex="-1"></a><span class="co">#' @return M^{-1}</span></span>
+<span id="cb8-63"><a href="helpers-functions.html#cb8-63" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb8-64"><a href="helpers-functions.html#cb8-64" tabindex="-1"></a><span id="safe_sym_inverse">safe_sym_inverse</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(M, <span class="at">tol =</span> <span class="fl">1e-10</span>) {</span>
+<span id="cb8-65"><a href="helpers-functions.html#cb8-65" tabindex="-1"></a>    eig <span class="ot">&lt;-</span> <span class="fu">eigen</span>((M <span class="sc">+</span> <span class="fu">t</span>(M)) <span class="sc">/</span> <span class="dv">2</span>, <span class="at">symmetric =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-66"><a href="helpers-functions.html#cb8-66" tabindex="-1"></a>    vals_inv <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">pmax</span>(eig<span class="sc">$</span>values, tol)</span>
+<span id="cb8-67"><a href="helpers-functions.html#cb8-67" tabindex="-1"></a>    eig<span class="sc">$</span>vectors <span class="sc">%*%</span> <span class="fu">diag</span>(vals_inv) <span class="sc">%*%</span> <span class="fu">t</span>(eig<span class="sc">$</span>vectors)</span>
+<span id="cb8-68"><a href="helpers-functions.html#cb8-68" tabindex="-1"></a>}</span>
+<span id="cb8-69"><a href="helpers-functions.html#cb8-69" tabindex="-1"></a></span>
+<span id="cb8-70"><a href="helpers-functions.html#cb8-70" tabindex="-1"></a></span>
+<span id="cb8-71"><a href="helpers-functions.html#cb8-71" tabindex="-1"></a><span class="co">#'generate n vmf data when p=2</span></span>
+<span id="cb8-72"><a href="helpers-functions.html#cb8-72" tabindex="-1"></a><span class="co">#' @param n number of observations</span></span>
+<span id="cb8-73"><a href="helpers-functions.html#cb8-73" tabindex="-1"></a><span class="co">#' @param mu_true,kappa_true true parameter</span></span>
+<span id="cb8-74"><a href="helpers-functions.html#cb8-74" tabindex="-1"></a><span class="co">#' @return list containing both cartesian and polara coodinates type.</span></span>
+<span id="cb8-75"><a href="helpers-functions.html#cb8-75" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb8-76"><a href="helpers-functions.html#cb8-76" tabindex="-1"></a><span id="generate_vmf_data">generate_vmf_data</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(n, mu_true, kappa_true) {</span>
+<span id="cb8-77"><a href="helpers-functions.html#cb8-77" tabindex="-1"></a>  </span>
+<span id="cb8-78"><a href="helpers-functions.html#cb8-78" tabindex="-1"></a>  eta_true <span class="ot">&lt;-</span> kappa_true <span class="sc">*</span> <span class="fu">c</span>(<span class="fu">cos</span>(mu_true), <span class="fu">sin</span>(mu_true))</span>
+<span id="cb8-79"><a href="helpers-functions.html#cb8-79" tabindex="-1"></a>  raw_samples <span class="ot">&lt;-</span> <span class="fu">replicate</span>(n, rstiefel<span class="sc">::</span><span class="fu">rmf.vector</span>(eta_true))[,<span class="dv">1</span>,]</span>
+<span id="cb8-80"><a href="helpers-functions.html#cb8-80" tabindex="-1"></a>  X_cartesian <span class="ot">&lt;-</span> <span class="fu">matrix</span>(raw_samples, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> n)</span>
+<span id="cb8-81"><a href="helpers-functions.html#cb8-81" tabindex="-1"></a>  theta_rad <span class="ot">&lt;-</span> <span class="fu">atan2</span>(X_cartesian[<span class="dv">2</span>, ], X_cartesian[<span class="dv">1</span>, ])</span>
+<span id="cb8-82"><a href="helpers-functions.html#cb8-82" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">X =</span> X_cartesian, <span class="at">theta =</span> theta_rad)</span>
+<span id="cb8-83"><a href="helpers-functions.html#cb8-83" tabindex="-1"></a>}</span></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="helpers-functions.html#cb9-1" tabindex="-1"></a><span class="co">#' Compute MLE given data X </span></span>
 <span id="cb9-2"><a href="helpers-functions.html#cb9-2" tabindex="-1"></a><span class="co">#' @param X nrow = p ncol = number of observation</span></span>
 <span id="cb9-3"><a href="helpers-functions.html#cb9-3" tabindex="-1"></a><span class="co">#' @return MLE as a p-dim vector</span></span>
@@ -242,7 +271,179 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb9-22"><a href="helpers-functions.html#cb9-22" tabindex="-1"></a>  </span>
 <span id="cb9-23"><a href="helpers-functions.html#cb9-23" tabindex="-1"></a>  <span class="fu">return</span>(c_hat)</span>
 <span id="cb9-24"><a href="helpers-functions.html#cb9-24" tabindex="-1"></a>}</span></code></pre></div>
+<div id="summarize-functions" class="section level2 hasAnchor" number="3.1">
+<h2>
+<span class="header-section-number">3.1</span> Summarize functions<a href="helpers-functions.html#summarize-functions" class="anchor-section" aria-label="Anchor link to header"></a>
+</h2>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="helpers-functions.html#cb10-1" tabindex="-1"></a><span class="co">#' Helper to compute statistics (Coverage, Length, Variance)</span></span>
+<span id="cb10-2"><a href="helpers-functions.html#cb10-2" tabindex="-1"></a><span class="co">#' @param samples samples of parameters on the real line</span></span>
+<span id="cb10-3"><a href="helpers-functions.html#cb10-3" tabindex="-1"></a><span class="co">#' @param true_val ground truth on real line</span></span>
+<span id="cb10-4"><a href="helpers-functions.html#cb10-4" tabindex="-1"></a><span class="co">#' @return list contain stats e,g, cover or not, len of confidence interval, variance.</span></span>
+<span id="cb10-5"><a href="helpers-functions.html#cb10-5" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb10-6"><a href="helpers-functions.html#cb10-6" tabindex="-1"></a><span id="get_stats">get_stats</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(samples, true_val) {</span>
+<span id="cb10-7"><a href="helpers-functions.html#cb10-7" tabindex="-1"></a>  ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(samples, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
+<span id="cb10-8"><a href="helpers-functions.html#cb10-8" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb10-9"><a href="helpers-functions.html#cb10-9" tabindex="-1"></a>    <span class="at">cover =</span> <span class="fu">as.numeric</span>(true_val <span class="sc">&gt;=</span> ci[<span class="dv">1</span>] <span class="sc">&amp;&amp;</span> true_val <span class="sc">&lt;=</span> ci[<span class="dv">2</span>]),</span>
+<span id="cb10-10"><a href="helpers-functions.html#cb10-10" tabindex="-1"></a>    <span class="at">len =</span> <span class="fu">as.numeric</span>(ci[<span class="dv">2</span>] <span class="sc">-</span> ci[<span class="dv">1</span>]),</span>
+<span id="cb10-11"><a href="helpers-functions.html#cb10-11" tabindex="-1"></a>    <span class="at">est_var =</span> <span class="fu">var</span>(samples) )</span>
+<span id="cb10-12"><a href="helpers-functions.html#cb10-12" tabindex="-1"></a>}</span>
+<span id="cb10-13"><a href="helpers-functions.html#cb10-13" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="helpers-functions.html#cb10-14" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="helpers-functions.html#cb10-15" tabindex="-1"></a><span class="co">#' Final Summarization</span></span>
+<span id="cb10-16"><a href="helpers-functions.html#cb10-16" tabindex="-1"></a><span class="co">#' @param rel_list a list containing all samples from all simulations</span></span>
+<span id="cb10-17"><a href="helpers-functions.html#cb10-17" tabindex="-1"></a><span class="co">#' @param method_name for example, "MCMC".</span></span>
+<span id="cb10-18"><a href="helpers-functions.html#cb10-18" tabindex="-1"></a><span class="co">#' @return list containing all statistics</span></span>
+<span id="cb10-19"><a href="helpers-functions.html#cb10-19" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb10-20"><a href="helpers-functions.html#cb10-20" tabindex="-1"></a><span id="summarize_df">summarize_df</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(res_list, method_name) {</span>
+<span id="cb10-21"><a href="helpers-functions.html#cb10-21" tabindex="-1"></a>  df <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, res_list)</span>
+<span id="cb10-22"><a href="helpers-functions.html#cb10-22" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb10-23"><a href="helpers-functions.html#cb10-23" tabindex="-1"></a>    <span class="at">Method  =</span> method_name,</span>
+<span id="cb10-24"><a href="helpers-functions.html#cb10-24" tabindex="-1"></a>    <span class="at">n       =</span> n,</span>
+<span id="cb10-25"><a href="helpers-functions.html#cb10-25" tabindex="-1"></a>    <span class="at">Cov_mu  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>c_mu) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb10-26"><a href="helpers-functions.html#cb10-26" tabindex="-1"></a>    <span class="at">Len_mu  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>l_mu),</span>
+<span id="cb10-27"><a href="helpers-functions.html#cb10-27" tabindex="-1"></a>    <span class="at">Cov_ka  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>c_ka) <span class="sc">*</span> <span class="dv">100</span>,</span>
+<span id="cb10-28"><a href="helpers-functions.html#cb10-28" tabindex="-1"></a>    <span class="at">Len_ka  =</span> <span class="fu">mean</span>(df<span class="sc">$</span>l_ka),</span>
+<span id="cb10-29"><a href="helpers-functions.html#cb10-29" tabindex="-1"></a>    <span class="at">Time    =</span> <span class="fu">mean</span>(df<span class="sc">$</span>time)</span>
+<span id="cb10-30"><a href="helpers-functions.html#cb10-30" tabindex="-1"></a>  )</span>
+<span id="cb10-31"><a href="helpers-functions.html#cb10-31" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="plot-functions" class="section level2 hasAnchor" number="3.2">
+<h2>
+<span class="header-section-number">3.2</span> Plot Functions<a href="helpers-functions.html#plot-functions" class="anchor-section" aria-label="Anchor link to header"></a>
+</h2>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="helpers-functions.html#cb11-1" tabindex="-1"></a><span class="co">#' Plot Trace Lines with Sideways Density</span></span>
+<span id="cb11-2"><a href="helpers-functions.html#cb11-2" tabindex="-1"></a><span class="co">#' @param paths A matrix where each row represents a chain's trajectory and each column represents an iteration. </span></span>
+<span id="cb11-3"><a href="helpers-functions.html#cb11-3" tabindex="-1"></a><span class="co">#'              If NULL, only the density plot is shown.</span></span>
+<span id="cb11-4"><a href="helpers-functions.html#cb11-4" tabindex="-1"></a><span class="co">#' @param samples A numeric vector of the final posterior samples used to compute the density.</span></span>
+<span id="cb11-5"><a href="helpers-functions.html#cb11-5" tabindex="-1"></a><span class="co">#' @param iter A numeric vector for the X-axis iterations. If NULL, defaults to 0:(ncol(paths)-1).</span></span>
+<span id="cb11-6"><a href="helpers-functions.html#cb11-6" tabindex="-1"></a><span class="co">#' @param ref_value A numeric value for a horizontal reference line (e.g., the true parameter value).</span></span>
+<span id="cb11-7"><a href="helpers-functions.html#cb11-7" tabindex="-1"></a><span class="co">#' @param ref_density_fun A function that takes a numeric vector and returns density values (e.g., an MCMC benchmark).</span></span>
+<span id="cb11-8"><a href="helpers-functions.html#cb11-8" tabindex="-1"></a><span class="co">#' @param xlab X-axis label. Defaults to "Forward step i" for traces or "Density" for pure density plots.</span></span>
+<span id="cb11-9"><a href="helpers-functions.html#cb11-9" tabindex="-1"></a><span class="co">#' @param ylab Y-axis label. Defaults to expression(mu).</span></span>
+<span id="cb11-10"><a href="helpers-functions.html#cb11-10" tabindex="-1"></a><span class="co">#' @param main Plot title.</span></span>
+<span id="cb11-11"><a href="helpers-functions.html#cb11-11" tabindex="-1"></a><span class="co">#' @param trace_col Color for the trajectory lines. Usually includes transparency.</span></span>
+<span id="cb11-12"><a href="helpers-functions.html#cb11-12" tabindex="-1"></a><span class="co">#' @param density_fill Fill color for the sideways density polygon.</span></span>
+<span id="cb11-13"><a href="helpers-functions.html#cb11-13" tabindex="-1"></a><span class="co">#' @param density_border Border color for the density polygon.</span></span>
+<span id="cb11-14"><a href="helpers-functions.html#cb11-14" tabindex="-1"></a><span class="co">#' @param ref_density_col Color for the reference density curve.</span></span>
+<span id="cb11-15"><a href="helpers-functions.html#cb11-15" tabindex="-1"></a><span class="co">#' @param n_value Optional sample size value (currently not used in plot logic).</span></span>
+<span id="cb11-16"><a href="helpers-functions.html#cb11-16" tabindex="-1"></a><span class="co">#' @param show_right_axis Logical; if TRUE, displays the Y-axis on the right side as well.</span></span>
+<span id="cb11-17"><a href="helpers-functions.html#cb11-17" tabindex="-1"></a><span class="co">#' @param xlim_multiplier Factor to extend the X-axis to accommodate the sideways density.</span></span>
+<span id="cb11-18"><a href="helpers-functions.html#cb11-18" tabindex="-1"></a><span class="co">#' @param y_range Manual limits for the Y-axis. If NULL, calculated automatically.</span></span>
+<span id="cb11-19"><a href="helpers-functions.html#cb11-19" tabindex="-1"></a><span class="co">#' @param mark_initial Logical; if TRUE, marks the starting point of the first chain.</span></span>
+<span id="cb11-20"><a href="helpers-functions.html#cb11-20" tabindex="-1"></a><span class="co">#' @param initial_col Color for the initial point marker.</span></span>
+<span id="cb11-21"><a href="helpers-functions.html#cb11-21" tabindex="-1"></a><span class="co">#' @param initial_cex Character expansion (size) for the initial point marker.</span></span>
+<span id="cb11-22"><a href="helpers-functions.html#cb11-22" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb11-23"><a href="helpers-functions.html#cb11-23" tabindex="-1"></a><span class="co">#' @return No return value, called for side effects (plotting).</span></span>
+<span id="cb11-24"><a href="helpers-functions.html#cb11-24" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb11-25"><a href="helpers-functions.html#cb11-25" tabindex="-1"></a><span id="plot_trace_sideways_density">plot_trace_sideways_density</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(</span>
+<span id="cb11-26"><a href="helpers-functions.html#cb11-26" tabindex="-1"></a>    <span class="at">paths =</span> <span class="cn">NULL</span>,             </span>
+<span id="cb11-27"><a href="helpers-functions.html#cb11-27" tabindex="-1"></a>    samples, </span>
+<span id="cb11-28"><a href="helpers-functions.html#cb11-28" tabindex="-1"></a>    <span class="at">iter =</span> <span class="cn">NULL</span>,</span>
+<span id="cb11-29"><a href="helpers-functions.html#cb11-29" tabindex="-1"></a>    <span class="at">ref_value =</span> <span class="cn">NULL</span>,</span>
+<span id="cb11-30"><a href="helpers-functions.html#cb11-30" tabindex="-1"></a>    <span class="at">ref_density_fun =</span> <span class="cn">NULL</span>,    </span>
+<span id="cb11-31"><a href="helpers-functions.html#cb11-31" tabindex="-1"></a>    <span class="at">xlab =</span> <span class="cn">NULL</span>,               </span>
+<span id="cb11-32"><a href="helpers-functions.html#cb11-32" tabindex="-1"></a>    <span class="at">ylab =</span> <span class="fu">expression</span>(mu),</span>
+<span id="cb11-33"><a href="helpers-functions.html#cb11-33" tabindex="-1"></a>    <span class="at">main =</span> <span class="cn">NULL</span>,</span>
+<span id="cb11-34"><a href="helpers-functions.html#cb11-34" tabindex="-1"></a>    <span class="at">trace_col =</span> <span class="fu">rgb</span>(<span class="fl">0.25</span>, <span class="fl">0.45</span>, <span class="fl">0.75</span>, <span class="fl">0.06</span>),</span>
+<span id="cb11-35"><a href="helpers-functions.html#cb11-35" tabindex="-1"></a>    <span class="at">density_fill =</span> <span class="fu">rgb</span>(<span class="fl">0.25</span>, <span class="fl">0.45</span>, <span class="fl">0.75</span>, <span class="fl">0.30</span>),</span>
+<span id="cb11-36"><a href="helpers-functions.html#cb11-36" tabindex="-1"></a>    <span class="at">density_border =</span> <span class="fu">rgb</span>(<span class="fl">0.20</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>),</span>
+<span id="cb11-37"><a href="helpers-functions.html#cb11-37" tabindex="-1"></a>    <span class="at">ref_density_col =</span> <span class="st">"red"</span>,   </span>
+<span id="cb11-38"><a href="helpers-functions.html#cb11-38" tabindex="-1"></a>    <span class="at">n_value =</span> <span class="cn">NULL</span>,</span>
+<span id="cb11-39"><a href="helpers-functions.html#cb11-39" tabindex="-1"></a>    <span class="at">show_right_axis =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb11-40"><a href="helpers-functions.html#cb11-40" tabindex="-1"></a>    <span class="at">xlim_multiplier =</span> <span class="fl">1.25</span>,</span>
+<span id="cb11-41"><a href="helpers-functions.html#cb11-41" tabindex="-1"></a>    <span class="at">y_range =</span> <span class="cn">NULL</span>,           </span>
+<span id="cb11-42"><a href="helpers-functions.html#cb11-42" tabindex="-1"></a>    <span class="at">mark_initial =</span> <span class="cn">TRUE</span>,      </span>
+<span id="cb11-43"><a href="helpers-functions.html#cb11-43" tabindex="-1"></a>    <span class="at">initial_col =</span> <span class="st">"red"</span>,      </span>
+<span id="cb11-44"><a href="helpers-functions.html#cb11-44" tabindex="-1"></a>    <span class="at">initial_cex =</span> <span class="fl">1.2</span> </span>
+<span id="cb11-45"><a href="helpers-functions.html#cb11-45" tabindex="-1"></a>) {</span>
+<span id="cb11-46"><a href="helpers-functions.html#cb11-46" tabindex="-1"></a>  <span class="co"># --- 1. Data Handling: Securely process paths and iterations ---</span></span>
+<span id="cb11-47"><a href="helpers-functions.html#cb11-47" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(paths)) {</span>
+<span id="cb11-48"><a href="helpers-functions.html#cb11-48" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.matrix</span>(paths)) paths <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(paths)</span>
+<span id="cb11-49"><a href="helpers-functions.html#cb11-49" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.null</span>(iter)) iter <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(<span class="fu">ncol</span>(paths)) <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb11-50"><a href="helpers-functions.html#cb11-50" tabindex="-1"></a>    </span>
+<span id="cb11-51"><a href="helpers-functions.html#cb11-51" tabindex="-1"></a>    x_start <span class="ot">&lt;-</span> <span class="fu">min</span>(iter)</span>
+<span id="cb11-52"><a href="helpers-functions.html#cb11-52" tabindex="-1"></a>    x_end <span class="ot">&lt;-</span> <span class="fu">max</span>(iter)</span>
+<span id="cb11-53"><a href="helpers-functions.html#cb11-53" tabindex="-1"></a>    x_width <span class="ot">&lt;-</span> x_end <span class="sc">-</span> x_start</span>
+<span id="cb11-54"><a href="helpers-functions.html#cb11-54" tabindex="-1"></a>    <span class="co"># Offset where the density plot begins (just to the right of the traces)</span></span>
+<span id="cb11-55"><a href="helpers-functions.html#cb11-55" tabindex="-1"></a>    x_offset <span class="ot">&lt;-</span> x_start <span class="sc">+</span> x_width <span class="sc">*</span> <span class="fl">1.02</span></span>
+<span id="cb11-56"><a href="helpers-functions.html#cb11-56" tabindex="-1"></a>    current_xlab <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">is.null</span>(xlab), <span class="st">"Forward step i"</span>, xlab)</span>
+<span id="cb11-57"><a href="helpers-functions.html#cb11-57" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb11-58"><a href="helpers-functions.html#cb11-58" tabindex="-1"></a>    <span class="co"># Pure density mode: set up dummy X-axis ranges</span></span>
+<span id="cb11-59"><a href="helpers-functions.html#cb11-59" tabindex="-1"></a>    x_start <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb11-60"><a href="helpers-functions.html#cb11-60" tabindex="-1"></a>    x_end <span class="ot">&lt;-</span> <span class="fl">0.05</span> </span>
+<span id="cb11-61"><a href="helpers-functions.html#cb11-61" tabindex="-1"></a>    x_width <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb11-62"><a href="helpers-functions.html#cb11-62" tabindex="-1"></a>    x_offset <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb11-63"><a href="helpers-functions.html#cb11-63" tabindex="-1"></a>    current_xlab <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">is.null</span>(xlab), <span class="st">"Density"</span>, xlab)</span>
+<span id="cb11-64"><a href="helpers-functions.html#cb11-64" tabindex="-1"></a>  }</span>
+<span id="cb11-65"><a href="helpers-functions.html#cb11-65" tabindex="-1"></a></span>
+<span id="cb11-66"><a href="helpers-functions.html#cb11-66" tabindex="-1"></a>  <span class="co"># Define Y-axis limits</span></span>
+<span id="cb11-67"><a href="helpers-functions.html#cb11-67" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(y_range)) {</span>
+<span id="cb11-68"><a href="helpers-functions.html#cb11-68" tabindex="-1"></a>    y_range <span class="ot">&lt;-</span> <span class="fu">range</span>(<span class="fu">c</span>(<span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(paths)) <span class="fu">as.vector</span>(paths), samples, ref_value), <span class="at">finite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-69"><a href="helpers-functions.html#cb11-69" tabindex="-1"></a>    y_pad <span class="ot">&lt;-</span> <span class="fl">0.1</span> <span class="sc">*</span> <span class="fu">diff</span>(y_range)</span>
+<span id="cb11-70"><a href="helpers-functions.html#cb11-70" tabindex="-1"></a>    y_range <span class="ot">&lt;-</span> y_range <span class="sc">+</span> <span class="fu">c</span>(<span class="sc">-</span>y_pad, y_pad)</span>
+<span id="cb11-71"><a href="helpers-functions.html#cb11-71" tabindex="-1"></a>  }</span>
+<span id="cb11-72"><a href="helpers-functions.html#cb11-72" tabindex="-1"></a></span>
+<span id="cb11-73"><a href="helpers-functions.html#cb11-73" tabindex="-1"></a>  <span class="co"># --- 2. Density Calculation ---</span></span>
+<span id="cb11-74"><a href="helpers-functions.html#cb11-74" tabindex="-1"></a>  dens <span class="ot">&lt;-</span> <span class="fu">density</span>(samples, <span class="at">n =</span> <span class="dv">512</span>)</span>
+<span id="cb11-75"><a href="helpers-functions.html#cb11-75" tabindex="-1"></a>  y_grid <span class="ot">&lt;-</span> <span class="fu">seq</span>(y_range[<span class="dv">1</span>], y_range[<span class="dv">2</span>], <span class="at">length.out =</span> <span class="dv">500</span>)</span>
+<span id="cb11-76"><a href="helpers-functions.html#cb11-76" tabindex="-1"></a>  ref_dens_vals <span class="ot">&lt;-</span> <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(ref_density_fun)) <span class="fu">ref_density_fun</span>(y_grid) <span class="cf">else</span> <span class="cn">NULL</span></span>
+<span id="cb11-77"><a href="helpers-functions.html#cb11-77" tabindex="-1"></a>  </span>
+<span id="cb11-78"><a href="helpers-functions.html#cb11-78" tabindex="-1"></a>  <span class="co"># Scaling: Density takes 25% of width if traces exist, otherwise 90%</span></span>
+<span id="cb11-79"><a href="helpers-functions.html#cb11-79" tabindex="-1"></a>  max_d <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">c</span>(dens<span class="sc">$</span>y, ref_dens_vals), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-80"><a href="helpers-functions.html#cb11-80" tabindex="-1"></a>  dens_scale <span class="ot">&lt;-</span> <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(paths)) (x_width <span class="sc">*</span> <span class="fl">0.25</span>) <span class="sc">/</span> max_d <span class="cf">else</span> (x_width <span class="sc">*</span> <span class="fl">0.9</span>) <span class="sc">/</span> max_d</span>
+<span id="cb11-81"><a href="helpers-functions.html#cb11-81" tabindex="-1"></a>  x_max <span class="ot">&lt;-</span> <span class="cf">if</span>(<span class="sc">!</span><span class="fu">is.null</span>(paths)) x_start <span class="sc">+</span> x_width <span class="sc">*</span> xlim_multiplier <span class="cf">else</span> x_width</span>
+<span id="cb11-82"><a href="helpers-functions.html#cb11-82" tabindex="-1"></a></span>
+<span id="cb11-83"><a href="helpers-functions.html#cb11-83" tabindex="-1"></a>  <span class="co"># --- 3. Plot Initialization ---</span></span>
+<span id="cb11-84"><a href="helpers-functions.html#cb11-84" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="cn">NULL</span>, <span class="at">xlim =</span> <span class="fu">c</span>(x_start, x_max), <span class="at">ylim =</span> y_range, </span>
+<span id="cb11-85"><a href="helpers-functions.html#cb11-85" tabindex="-1"></a>       <span class="at">xlab =</span> <span class="st">""</span>, <span class="at">ylab =</span> ylab, <span class="at">main =</span> main, <span class="at">xaxt =</span> <span class="st">"n"</span>, <span class="at">yaxt =</span> <span class="st">"n"</span>, <span class="at">las =</span> <span class="dv">1</span>)</span>
+<span id="cb11-86"><a href="helpers-functions.html#cb11-86" tabindex="-1"></a>  </span>
+<span id="cb11-87"><a href="helpers-functions.html#cb11-87" tabindex="-1"></a>  <span class="co"># Add Left Y-axis</span></span>
+<span id="cb11-88"><a href="helpers-functions.html#cb11-88" tabindex="-1"></a>  <span class="fu">axis</span>(<span class="dv">2</span>, <span class="at">las =</span> <span class="dv">1</span>)</span>
+<span id="cb11-89"><a href="helpers-functions.html#cb11-89" tabindex="-1"></a>  <span class="co"># Add Right Y-axis if requested</span></span>
+<span id="cb11-90"><a href="helpers-functions.html#cb11-90" tabindex="-1"></a>  <span class="cf">if</span> (show_right_axis) <span class="fu">axis</span>(<span class="dv">4</span>, <span class="at">las =</span> <span class="dv">1</span>)</span>
+<span id="cb11-91"><a href="helpers-functions.html#cb11-91" tabindex="-1"></a></span>
+<span id="cb11-92"><a href="helpers-functions.html#cb11-92" tabindex="-1"></a>  <span class="co"># --- 4. Draw X-axis Labels ---</span></span>
+<span id="cb11-93"><a href="helpers-functions.html#cb11-93" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(paths)) {</span>
+<span id="cb11-94"><a href="helpers-functions.html#cb11-94" tabindex="-1"></a>    ticks <span class="ot">&lt;-</span> <span class="fu">pretty</span>(<span class="fu">c</span>(x_start, x_end))</span>
+<span id="cb11-95"><a href="helpers-functions.html#cb11-95" tabindex="-1"></a>    <span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">at =</span> ticks, <span class="at">labels =</span> ticks)</span>
+<span id="cb11-96"><a href="helpers-functions.html#cb11-96" tabindex="-1"></a>    <span class="fu">mtext</span>(current_xlab, <span class="at">side =</span> <span class="dv">1</span>, <span class="at">line =</span> <span class="fl">2.5</span>)</span>
+<span id="cb11-97"><a href="helpers-functions.html#cb11-97" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb11-98"><a href="helpers-functions.html#cb11-98" tabindex="-1"></a>    d_ticks <span class="ot">&lt;-</span> <span class="fu">pretty</span>(<span class="fu">c</span>(<span class="dv">0</span>, max_d))</span>
+<span id="cb11-99"><a href="helpers-functions.html#cb11-99" tabindex="-1"></a>    <span class="fu">axis</span>(<span class="dv">1</span>, <span class="at">at =</span> x_offset <span class="sc">+</span> d_ticks <span class="sc">*</span> dens_scale, <span class="at">labels =</span> d_ticks)</span>
+<span id="cb11-100"><a href="helpers-functions.html#cb11-100" tabindex="-1"></a>    <span class="fu">mtext</span>(current_xlab, <span class="at">side =</span> <span class="dv">1</span>, <span class="at">line =</span> <span class="fl">2.5</span>)</span>
+<span id="cb11-101"><a href="helpers-functions.html#cb11-101" tabindex="-1"></a>  }</span>
+<span id="cb11-102"><a href="helpers-functions.html#cb11-102" tabindex="-1"></a></span>
+<span id="cb11-103"><a href="helpers-functions.html#cb11-103" tabindex="-1"></a>  <span class="co"># --- 5. Plot Trajectories ---</span></span>
+<span id="cb11-104"><a href="helpers-functions.html#cb11-104" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(paths)) {</span>
+<span id="cb11-105"><a href="helpers-functions.html#cb11-105" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(paths))) {</span>
+<span id="cb11-106"><a href="helpers-functions.html#cb11-106" tabindex="-1"></a>      <span class="fu">lines</span>(iter, paths[i, ], <span class="at">col =</span> trace_col, <span class="at">lwd =</span> <span class="fl">0.5</span>)</span>
+<span id="cb11-107"><a href="helpers-functions.html#cb11-107" tabindex="-1"></a>    }</span>
+<span id="cb11-108"><a href="helpers-functions.html#cb11-108" tabindex="-1"></a>    </span>
+<span id="cb11-109"><a href="helpers-functions.html#cb11-109" tabindex="-1"></a>    <span class="co"># Optionally mark the starting point (e.g., MLE or initial guess)</span></span>
+<span id="cb11-110"><a href="helpers-functions.html#cb11-110" tabindex="-1"></a>    <span class="cf">if</span> (mark_initial) {</span>
+<span id="cb11-111"><a href="helpers-functions.html#cb11-111" tabindex="-1"></a>      <span class="fu">points</span>(iter[<span class="dv">1</span>], paths[<span class="dv">1</span>, <span class="dv">1</span>], <span class="at">col =</span> initial_col, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">cex =</span> initial_cex)</span>
+<span id="cb11-112"><a href="helpers-functions.html#cb11-112" tabindex="-1"></a>    }</span>
+<span id="cb11-113"><a href="helpers-functions.html#cb11-113" tabindex="-1"></a>  }</span>
+<span id="cb11-114"><a href="helpers-functions.html#cb11-114" tabindex="-1"></a></span>
+<span id="cb11-115"><a href="helpers-functions.html#cb11-115" tabindex="-1"></a>  <span class="co"># --- 6. Plot Densities (Sideways) ---</span></span>
+<span id="cb11-116"><a href="helpers-functions.html#cb11-116" tabindex="-1"></a>  <span class="co"># Draw the main density polygon</span></span>
+<span id="cb11-117"><a href="helpers-functions.html#cb11-117" tabindex="-1"></a>  <span class="fu">polygon</span>(x_offset <span class="sc">+</span> dens<span class="sc">$</span>y <span class="sc">*</span> dens_scale, dens<span class="sc">$</span>x, </span>
+<span id="cb11-118"><a href="helpers-functions.html#cb11-118" tabindex="-1"></a>          <span class="at">col =</span> density_fill, <span class="at">border =</span> density_border, <span class="at">lwd =</span> <span class="fl">1.2</span>)</span>
+<span id="cb11-119"><a href="helpers-functions.html#cb11-119" tabindex="-1"></a>  </span>
+<span id="cb11-120"><a href="helpers-functions.html#cb11-120" tabindex="-1"></a>  <span class="co"># Draw the reference density line if provided</span></span>
+<span id="cb11-121"><a href="helpers-functions.html#cb11-121" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(ref_dens_vals)) {</span>
+<span id="cb11-122"><a href="helpers-functions.html#cb11-122" tabindex="-1"></a>    <span class="fu">lines</span>(x_offset <span class="sc">+</span> ref_dens_vals <span class="sc">*</span> dens_scale, y_grid, </span>
+<span id="cb11-123"><a href="helpers-functions.html#cb11-123" tabindex="-1"></a>          <span class="at">col =</span> ref_density_col, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb11-124"><a href="helpers-functions.html#cb11-124" tabindex="-1"></a>  }</span>
+<span id="cb11-125"><a href="helpers-functions.html#cb11-125" tabindex="-1"></a></span>
+<span id="cb11-126"><a href="helpers-functions.html#cb11-126" tabindex="-1"></a>  <span class="co"># Add reference horizontal line (True Value)</span></span>
+<span id="cb11-127"><a href="helpers-functions.html#cb11-127" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(ref_value)) <span class="fu">abline</span>(<span class="at">h =</span> ref_value, <span class="at">col =</span> <span class="st">"red"</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb11-128"><a href="helpers-functions.html#cb11-128" tabindex="-1"></a>  </span>
+<span id="cb11-129"><a href="helpers-functions.html#cb11-129" tabindex="-1"></a>  <span class="co"># Vertical separator line between trace and density</span></span>
+<span id="cb11-130"><a href="helpers-functions.html#cb11-130" tabindex="-1"></a>  <span class="fu">segments</span>(x_offset, y_range[<span class="dv">1</span>], x_offset, y_range[<span class="dv">2</span>], <span class="at">col =</span> <span class="st">"gray60"</span>, <span class="at">lty =</span> <span class="dv">3</span>)</span>
+<span id="cb11-131"><a href="helpers-functions.html#cb11-131" tabindex="-1"></a>}</span></code></pre></div>
 
+</div>
 </div>
             </section>
 </div>

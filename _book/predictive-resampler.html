@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="5 Predictive Resampler | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-26">
+<meta name="date" content="2026-05-29">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -109,13 +109,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <nav role="navigation"><ul class="summary">
 <li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introduction</a></li>
 <li class="chapter" data-level="2" data-path="package-setup.html"><a href="package-setup.html"><i class="fa fa-check"></i><b>2</b> Package setup</a></li>
-<li class="chapter" data-level="3" data-path="helpers-functions.html"><a href="helpers-functions.html"><i class="fa fa-check"></i><b>3</b> Helpers functions</a></li>
+<li class="chapter" data-level="3" data-path="helpers-functions.html">
+<a href="helpers-functions.html"><i class="fa fa-check"></i><b>3</b> Helpers functions</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="helpers-functions.html"><a href="helpers-functions.html#summarize-functions"><i class="fa fa-check"></i><b>3.1</b> Summarize functions</a></li>
+<li class="chapter" data-level="3.2" data-path="helpers-functions.html"><a href="helpers-functions.html#plot-functions"><i class="fa fa-check"></i><b>3.2</b> Plot Functions</a></li>
+</ul>
+</li>
 <li class="chapter" data-level="4" data-path="syntheticdata.html"><a href="syntheticdata.html"><i class="fa fa-check"></i><b>4</b> Generating synthetic data</a></li>
 <li class="chapter" data-level="5" data-path="predictive-resampler.html">
 <a href="predictive-resampler.html"><i class="fa fa-check"></i><b>5</b> Predictive Resampler</a>
 <ul>
 <li class="chapter" data-level="5.1" data-path="predictive-resampler.html"><a href="predictive-resampler.html#the-main-sampler"><i class="fa fa-check"></i><b>5.1</b> The main sampler</a></li>
-<li class="chapter" data-level="5.2" data-path="predictive-resampler.html"><a href="predictive-resampler.html#hybrid-method-and-related-code"><i class="fa fa-check"></i><b>5.2</b> Hybrid Method and related code</a></li>
 </ul>
 </li>
 <li class="chapter" data-level="6" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html">
@@ -125,7 +130,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#bayesian-inference-on-a-conjugate-prior-with-p2."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior with p=2.</a></li>
 <li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#a-simple-example-for-mps-to-help-you-draw-graphies-in-the-paper"><i class="fa fa-check"></i><b>6.3</b> A simple example for MPS to help you draw graphies in the paper</a></li>
 <li class="chapter" data-level="6.4" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#comparison-between-mcmc-and-mps-method."><i class="fa fa-check"></i><b>6.4</b> Comparison between MCMC and MPS Method.</a></li>
-<li class="chapter" data-level="6.5" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#simulation-for-hybrid-method"><i class="fa fa-check"></i><b>6.5</b> Simulation for Hybrid Method</a></li>
 </ul>
 </li>
 <li class="chapter" data-level="7" data-path="oscar-real-data-application.html">
@@ -162,215 +166,145 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span class="header-section-number">5.1</span> The main sampler<a href="predictive-resampler.html#the-main-sampler" class="anchor-section" aria-label="Anchor link to header"></a>
 </h2>
 <p>The main Gibbs sampler is called <code><a href="predictive-resampler.html#run_predresamp_vmf">run_predresamp_vmf</a>()</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="predictive-resampler.html#cb10-1" tabindex="-1"></a><span class="co">#' Run a single martingale posterior chain (no preconditioner).</span></span>
-<span id="cb10-2"><a href="predictive-resampler.html#cb10-2" tabindex="-1"></a><span class="co">#' @param c0 initial natural parameter vector(use MLE)</span></span>
-<span id="cb10-3"><a href="predictive-resampler.html#cb10-3" tabindex="-1"></a><span class="co">#' @param N number of observed data points</span></span>
-<span id="cb10-4"><a href="predictive-resampler.html#cb10-4" tabindex="-1"></a><span class="co">#' @param M number of iteration </span></span>
-<span id="cb10-5"><a href="predictive-resampler.html#cb10-5" tabindex="-1"></a><span class="co">#' @return A list with components:</span></span>
-<span id="cb10-6"><a href="predictive-resampler.html#cb10-6" tabindex="-1"></a><span class="co">#'   \item{c_final}{final natural parameter vector after possible correction}</span></span>
-<span id="cb10-7"><a href="predictive-resampler.html#cb10-7" tabindex="-1"></a><span class="co">#'   \item{mu_final}{mean direction (angle in radians if p=2)}</span></span>
-<span id="cb10-8"><a href="predictive-resampler.html#cb10-8" tabindex="-1"></a><span class="co">#'   \item{kappa_final}{concentration parameter}</span></span>
-<span id="cb10-9"><a href="predictive-resampler.html#cb10-9" tabindex="-1"></a><span class="co">#'   \item{x_chain}{all new x generated}</span></span>
-<span id="cb10-10"><a href="predictive-resampler.html#cb10-10" tabindex="-1"></a><span class="co">#'   \item{c_chain}{all new c generated}</span></span>
-<span id="cb10-11"><a href="predictive-resampler.html#cb10-11" tabindex="-1"></a><span class="co">#'@export</span></span>
-<span id="cb10-12"><a href="predictive-resampler.html#cb10-12" tabindex="-1"></a><span id="run_single_martingale">run_single_martingale</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(c0, N, <span class="at">M =</span> <span class="dv">20</span>,<span class="at">save_path =</span> <span class="cn">FALSE</span>) {</span>
-<span id="cb10-13"><a href="predictive-resampler.html#cb10-13" tabindex="-1"></a>                                  </span>
-<span id="cb10-14"><a href="predictive-resampler.html#cb10-14" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">length</span>(c0)</span>
-<span id="cb10-15"><a href="predictive-resampler.html#cb10-15" tabindex="-1"></a>  c_curr <span class="ot">&lt;-</span> c0</span>
-<span id="cb10-16"><a href="predictive-resampler.html#cb10-16" tabindex="-1"></a>  V_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, p, p)          <span class="co"># accumulated un‑preconditioned score outer products</span></span>
-<span id="cb10-17"><a href="predictive-resampler.html#cb10-17" tabindex="-1"></a>  total_w <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb10-18"><a href="predictive-resampler.html#cb10-18" tabindex="-1"></a></span>
-<span id="cb10-19"><a href="predictive-resampler.html#cb10-19" tabindex="-1"></a>  <span class="cf">if</span> (save_path) {</span>
-<span id="cb10-20"><a href="predictive-resampler.html#cb10-20" tabindex="-1"></a>    x_chain <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, p, M)</span>
-<span id="cb10-21"><a href="predictive-resampler.html#cb10-21" tabindex="-1"></a>    c_chain <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, p, M)</span>
-<span id="cb10-22"><a href="predictive-resampler.html#cb10-22" tabindex="-1"></a>  }</span>
-<span id="cb10-23"><a href="predictive-resampler.html#cb10-23" tabindex="-1"></a>  </span>
-<span id="cb10-24"><a href="predictive-resampler.html#cb10-24" tabindex="-1"></a>  </span>
-<span id="cb10-25"><a href="predictive-resampler.html#cb10-25" tabindex="-1"></a>  </span>
-<span id="cb10-26"><a href="predictive-resampler.html#cb10-26" tabindex="-1"></a>  <span class="co"># main loop</span></span>
-<span id="cb10-27"><a href="predictive-resampler.html#cb10-27" tabindex="-1"></a>  w_cur <span class="ot">&lt;-</span> <a href="helpers-functions.html#compute_weights">compute_weights</a>(N,M)<span class="sc">$</span>W_nm</span>
-<span id="cb10-28"><a href="predictive-resampler.html#cb10-28" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>M) {</span>
-<span id="cb10-29"><a href="predictive-resampler.html#cb10-29" tabindex="-1"></a>      x_new <span class="ot">&lt;-</span> rstiefel<span class="sc">::</span><span class="fu">rmf.vector</span>(c_curr)</span>
-<span id="cb10-30"><a href="predictive-resampler.html#cb10-30" tabindex="-1"></a>      s <span class="ot">&lt;-</span> <a href="helpers-functions.html#score_fn">score_fn</a>(c_curr, x_new, p)</span>
-<span id="cb10-31"><a href="predictive-resampler.html#cb10-31" tabindex="-1"></a>      wt <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (t <span class="sc">+</span> N<span class="dv">-1</span>)</span>
-<span id="cb10-32"><a href="predictive-resampler.html#cb10-32" tabindex="-1"></a>      total_w <span class="ot">&lt;-</span> total_w <span class="sc">+</span> wt<span class="sc">^</span><span class="dv">2</span></span>
-<span id="cb10-33"><a href="predictive-resampler.html#cb10-33" tabindex="-1"></a>      V_mat <span class="ot">&lt;-</span> V_mat <span class="sc">+</span> wt<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> <a href="helpers-functions.html#get_FIM_vmf">get_FIM_vmf</a>(c_curr,p)</span>
-<span id="cb10-34"><a href="predictive-resampler.html#cb10-34" tabindex="-1"></a>      c_curr <span class="ot">&lt;-</span> c_curr <span class="sc">+</span> wt <span class="sc">*</span> s</span>
-<span id="cb10-35"><a href="predictive-resampler.html#cb10-35" tabindex="-1"></a>      </span>
-<span id="cb10-36"><a href="predictive-resampler.html#cb10-36" tabindex="-1"></a>      <span class="cf">if</span> (save_path) {</span>
-<span id="cb10-37"><a href="predictive-resampler.html#cb10-37" tabindex="-1"></a>      x_chain[, t] <span class="ot">&lt;-</span> x_new</span>
-<span id="cb10-38"><a href="predictive-resampler.html#cb10-38" tabindex="-1"></a>      c_chain[, t] <span class="ot">&lt;-</span> c_curr</span>
-<span id="cb10-39"><a href="predictive-resampler.html#cb10-39" tabindex="-1"></a>    }</span>
-<span id="cb10-40"><a href="predictive-resampler.html#cb10-40" tabindex="-1"></a>      </span>
-<span id="cb10-41"><a href="predictive-resampler.html#cb10-41" tabindex="-1"></a>  }</span>
-<span id="cb10-42"><a href="predictive-resampler.html#cb10-42" tabindex="-1"></a>  </span>
-<span id="cb10-43"><a href="predictive-resampler.html#cb10-43" tabindex="-1"></a>  <span class="co"># Variance correction for first m step</span></span>
-<span id="cb10-44"><a href="predictive-resampler.html#cb10-44" tabindex="-1"></a>  <span id="safe_sym_inverse">safe_sym_inverse</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(M, <span class="at">tol =</span> <span class="fl">1e-10</span>) {</span>
-<span id="cb10-45"><a href="predictive-resampler.html#cb10-45" tabindex="-1"></a>    eig <span class="ot">&lt;-</span> <span class="fu">eigen</span>((M <span class="sc">+</span> <span class="fu">t</span>(M)) <span class="sc">/</span> <span class="dv">2</span>, <span class="at">symmetric =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb10-46"><a href="predictive-resampler.html#cb10-46" tabindex="-1"></a>    vals_inv <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">pmax</span>(eig<span class="sc">$</span>values, tol)</span>
-<span id="cb10-47"><a href="predictive-resampler.html#cb10-47" tabindex="-1"></a>    eig<span class="sc">$</span>vectors <span class="sc">%*%</span> <span class="fu">diag</span>(vals_inv) <span class="sc">%*%</span> <span class="fu">t</span>(eig<span class="sc">$</span>vectors)</span>
-<span id="cb10-48"><a href="predictive-resampler.html#cb10-48" tabindex="-1"></a>  }</span>
-<span id="cb10-49"><a href="predictive-resampler.html#cb10-49" tabindex="-1"></a>  </span>
-<span id="cb10-50"><a href="predictive-resampler.html#cb10-50" tabindex="-1"></a>  delta <span class="ot">&lt;-</span> c_curr <span class="sc">-</span> c0</span>
-<span id="cb10-51"><a href="predictive-resampler.html#cb10-51" tabindex="-1"></a>  A <span class="ot">&lt;-</span> total_w <span class="sc">*</span> <a href="predictive-resampler.html#safe_sym_inverse">safe_sym_inverse</a>(V_mat, <span class="at">tol =</span> <span class="fl">1e-10</span>)</span>
-<span id="cb10-52"><a href="predictive-resampler.html#cb10-52" tabindex="-1"></a>  c_curr <span class="ot">&lt;-</span> c0 <span class="sc">+</span> A <span class="sc">%*%</span> delta</span>
-<span id="cb10-53"><a href="predictive-resampler.html#cb10-53" tabindex="-1"></a> </span>
-<span id="cb10-54"><a href="predictive-resampler.html#cb10-54" tabindex="-1"></a>  <span class="co"># ---- Convert to polar coordinates (mu, kappa) for p=2----</span></span>
-<span id="cb10-55"><a href="predictive-resampler.html#cb10-55" tabindex="-1"></a>  kappa_final <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>(c_curr<span class="sc">^</span><span class="dv">2</span>))</span>
-<span id="cb10-56"><a href="predictive-resampler.html#cb10-56" tabindex="-1"></a>  <span class="cf">if</span> (p <span class="sc">==</span> <span class="dv">2</span>) {</span>
-<span id="cb10-57"><a href="predictive-resampler.html#cb10-57" tabindex="-1"></a>    mu_final <span class="ot">&lt;-</span> <span class="fu">atan2</span>(c_curr[<span class="dv">2</span>], c_curr[<span class="dv">1</span>])</span>
-<span id="cb10-58"><a href="predictive-resampler.html#cb10-58" tabindex="-1"></a>    <span class="cf">if</span> (mu_final <span class="sc">&lt;</span> <span class="dv">0</span>) mu_final <span class="ot">&lt;-</span> mu_final <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> pi</span>
-<span id="cb10-59"><a href="predictive-resampler.html#cb10-59" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
-<span id="cb10-60"><a href="predictive-resampler.html#cb10-60" tabindex="-1"></a>    mu_final <span class="ot">&lt;-</span>(<span class="dv">1</span><span class="sc">/</span>kappa_final) <span class="sc">*</span> c_curr</span>
-<span id="cb10-61"><a href="predictive-resampler.html#cb10-61" tabindex="-1"></a>  }</span>
-<span id="cb10-62"><a href="predictive-resampler.html#cb10-62" tabindex="-1"></a>  </span>
-<span id="cb10-63"><a href="predictive-resampler.html#cb10-63" tabindex="-1"></a>  res <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb10-64"><a href="predictive-resampler.html#cb10-64" tabindex="-1"></a>    <span class="at">c_final     =</span> c_curr,</span>
-<span id="cb10-65"><a href="predictive-resampler.html#cb10-65" tabindex="-1"></a>    <span class="at">mu_final    =</span> mu_final,</span>
-<span id="cb10-66"><a href="predictive-resampler.html#cb10-66" tabindex="-1"></a>    <span class="at">kappa_final =</span> kappa_final</span>
-<span id="cb10-67"><a href="predictive-resampler.html#cb10-67" tabindex="-1"></a>  )</span>
-<span id="cb10-68"><a href="predictive-resampler.html#cb10-68" tabindex="-1"></a>  <span class="cf">if</span> (save_path) {</span>
-<span id="cb10-69"><a href="predictive-resampler.html#cb10-69" tabindex="-1"></a>    res<span class="sc">$</span>x_chain <span class="ot">&lt;-</span> x_chain</span>
-<span id="cb10-70"><a href="predictive-resampler.html#cb10-70" tabindex="-1"></a>    res<span class="sc">$</span>c_chain <span class="ot">&lt;-</span> c_chain</span>
-<span id="cb10-71"><a href="predictive-resampler.html#cb10-71" tabindex="-1"></a>  }</span>
-<span id="cb10-72"><a href="predictive-resampler.html#cb10-72" tabindex="-1"></a>  </span>
-<span id="cb10-73"><a href="predictive-resampler.html#cb10-73" tabindex="-1"></a>  res</span>
-<span id="cb10-74"><a href="predictive-resampler.html#cb10-74" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="predictive-resampler.html#cb11-1" tabindex="-1"></a><span class="co">#' run B chains for empirical density</span></span>
-<span id="cb11-2"><a href="predictive-resampler.html#cb11-2" tabindex="-1"></a><span class="co">#' @param X data dim = c(p,n)</span></span>
-<span id="cb11-3"><a href="predictive-resampler.html#cb11-3" tabindex="-1"></a><span class="co">#' @param B expected sample size</span></span>
-<span id="cb11-4"><a href="predictive-resampler.html#cb11-4" tabindex="-1"></a><span class="co">#' @param M number of iteration</span></span>
-<span id="cb11-5"><a href="predictive-resampler.html#cb11-5" tabindex="-1"></a><span class="co">#' @param n_cores number of cores used in mclapply</span></span>
-<span id="cb11-6"><a href="predictive-resampler.html#cb11-6" tabindex="-1"></a><span class="co">#' @param save_chain whether to save the entire chain.</span></span>
-<span id="cb11-7"><a href="predictive-resampler.html#cb11-7" tabindex="-1"></a><span class="co">#' @export</span></span>
-<span id="cb11-8"><a href="predictive-resampler.html#cb11-8" tabindex="-1"></a><span id="run_predresamp_vmf">run_predresamp_vmf</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(X,<span class="at">B =</span> <span class="dv">5000</span>, <span class="at">M =</span> <span class="dv">50</span>, <span class="at">n_cores =</span> <span class="dv">1</span>,<span class="at">return_chains =</span> <span class="cn">FALSE</span>){</span>
-<span id="cb11-9"><a href="predictive-resampler.html#cb11-9" tabindex="-1"></a>  </span>
-<span id="cb11-10"><a href="predictive-resampler.html#cb11-10" tabindex="-1"></a>  n  <span class="ot">&lt;-</span> <span class="fu">ncol</span>(X)</span>
-<span id="cb11-11"><a href="predictive-resampler.html#cb11-11" tabindex="-1"></a>  p  <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
-<span id="cb11-12"><a href="predictive-resampler.html#cb11-12" tabindex="-1"></a>  c0 <span class="ot">&lt;-</span> <a href="helpers-functions.html#mle_vmf">mle_vmf</a>(X)</span>
-<span id="cb11-13"><a href="predictive-resampler.html#cb11-13" tabindex="-1"></a>  </span>
-<span id="cb11-14"><a href="predictive-resampler.html#cb11-14" tabindex="-1"></a>  </span>
-<span id="cb11-15"><a href="predictive-resampler.html#cb11-15" tabindex="-1"></a>  chains <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(<span class="dv">1</span><span class="sc">:</span>B, <span class="cf">function</span>(b) {</span>
-<span id="cb11-16"><a href="predictive-resampler.html#cb11-16" tabindex="-1"></a>    <a href="predictive-resampler.html#run_single_martingale">run_single_martingale</a>(<span class="at">c0 =</span> c0, <span class="at">N =</span> n, <span class="at">M =</span> M, <span class="at">save_path =</span> return_chains)</span>
-<span id="cb11-17"><a href="predictive-resampler.html#cb11-17" tabindex="-1"></a>  }, <span class="at">mc.cores =</span> n_cores)</span>
-<span id="cb11-18"><a href="predictive-resampler.html#cb11-18" tabindex="-1"></a>  </span>
-<span id="cb11-19"><a href="predictive-resampler.html#cb11-19" tabindex="-1"></a>  c_sam <span class="ot">&lt;-</span> <span class="fu">sapply</span>(chains, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"c_final"</span>)</span>
-<span id="cb11-20"><a href="predictive-resampler.html#cb11-20" tabindex="-1"></a>  kappa_sam <span class="ot">&lt;-</span><span class="fu">sapply</span>(chains,<span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"kappa_final"</span>)</span>
-<span id="cb11-21"><a href="predictive-resampler.html#cb11-21" tabindex="-1"></a>  mu_sam <span class="ot">&lt;-</span><span class="fu">sapply</span>(chains,<span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"mu_final"</span>)</span>
-<span id="cb11-22"><a href="predictive-resampler.html#cb11-22" tabindex="-1"></a>  </span>
-<span id="cb11-23"><a href="predictive-resampler.html#cb11-23" tabindex="-1"></a>  sample_list <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb11-24"><a href="predictive-resampler.html#cb11-24" tabindex="-1"></a>    <span class="at">c_sam     =</span> c_sam,</span>
-<span id="cb11-25"><a href="predictive-resampler.html#cb11-25" tabindex="-1"></a>    <span class="at">mu_sam    =</span> mu_sam,</span>
-<span id="cb11-26"><a href="predictive-resampler.html#cb11-26" tabindex="-1"></a>    <span class="at">kappa_sam =</span> kappa_sam</span>
-<span id="cb11-27"><a href="predictive-resampler.html#cb11-27" tabindex="-1"></a>  )</span>
-<span id="cb11-28"><a href="predictive-resampler.html#cb11-28" tabindex="-1"></a></span>
-<span id="cb11-29"><a href="predictive-resampler.html#cb11-29" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">sample =</span> sample_list)</span>
-<span id="cb11-30"><a href="predictive-resampler.html#cb11-30" tabindex="-1"></a>  <span class="cf">if</span> (return_chains) {</span>
-<span id="cb11-31"><a href="predictive-resampler.html#cb11-31" tabindex="-1"></a>    out<span class="sc">$</span>chain <span class="ot">&lt;-</span> chains</span>
-<span id="cb11-32"><a href="predictive-resampler.html#cb11-32" tabindex="-1"></a>  }</span>
-<span id="cb11-33"><a href="predictive-resampler.html#cb11-33" tabindex="-1"></a>  </span>
-<span id="cb11-34"><a href="predictive-resampler.html#cb11-34" tabindex="-1"></a>  out</span>
-<span id="cb11-35"><a href="predictive-resampler.html#cb11-35" tabindex="-1"></a>}</span></code></pre></div>
-</div>
-<div id="hybrid-method-and-related-code" class="section level2 hasAnchor" number="5.2">
-<h2>
-<span class="header-section-number">5.2</span> Hybrid Method and related code<a href="predictive-resampler.html#hybrid-method-and-related-code" class="anchor-section" aria-label="Anchor link to header"></a>
-</h2>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="predictive-resampler.html#cb12-1" tabindex="-1"></a><span class="co">#' Run the early path for a single chain (Step 1 of Hybrid Method)</span></span>
-<span id="cb12-2"><a href="predictive-resampler.html#cb12-2" tabindex="-1"></a><span class="co">#' @param c0 initial natural parameter (MLE)</span></span>
-<span id="cb12-3"><a href="predictive-resampler.html#cb12-3" tabindex="-1"></a><span class="co">#' @param n observed sample size</span></span>
-<span id="cb12-4"><a href="predictive-resampler.html#cb12-4" tabindex="-1"></a><span class="co">#' @param M predictive steps</span></span>
-<span id="cb12-5"><a href="predictive-resampler.html#cb12-5" tabindex="-1"></a><span class="co">#' @return A list containing displacement D and quadratic variation Q</span></span>
-<span id="cb12-6"><a href="predictive-resampler.html#cb12-6" tabindex="-1"></a><span class="co">#' @export</span></span>
-<span id="cb12-7"><a href="predictive-resampler.html#cb12-7" tabindex="-1"></a><span id="run_early_path">run_early_path</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(c0, n, M) {</span>
-<span id="cb12-8"><a href="predictive-resampler.html#cb12-8" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">length</span>(c0)</span>
-<span id="cb12-9"><a href="predictive-resampler.html#cb12-9" tabindex="-1"></a>  c_curr <span class="ot">&lt;-</span> c0</span>
-<span id="cb12-10"><a href="predictive-resampler.html#cb12-10" tabindex="-1"></a>  Q_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, p, p)</span>
-<span id="cb12-11"><a href="predictive-resampler.html#cb12-11" tabindex="-1"></a>  </span>
-<span id="cb12-12"><a href="predictive-resampler.html#cb12-12" tabindex="-1"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>M) {</span>
-<span id="cb12-13"><a href="predictive-resampler.html#cb12-13" tabindex="-1"></a>    gamma_nt <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (n <span class="sc">+</span> t)</span>
-<span id="cb12-14"><a href="predictive-resampler.html#cb12-14" tabindex="-1"></a>    <span class="co"># Sample from predictive distribution</span></span>
-<span id="cb12-15"><a href="predictive-resampler.html#cb12-15" tabindex="-1"></a>    x_new <span class="ot">&lt;-</span> rstiefel<span class="sc">::</span><span class="fu">rmf.vector</span>(c_curr)</span>
-<span id="cb12-16"><a href="predictive-resampler.html#cb12-16" tabindex="-1"></a>    <span class="co"># Compute score</span></span>
-<span id="cb12-17"><a href="predictive-resampler.html#cb12-17" tabindex="-1"></a>    s <span class="ot">&lt;-</span> <a href="helpers-functions.html#score_fn">score_fn</a>(c_curr, x_new, p)</span>
-<span id="cb12-18"><a href="predictive-resampler.html#cb12-18" tabindex="-1"></a>    <span class="co"># Accumulate quadratic variation</span></span>
-<span id="cb12-19"><a href="predictive-resampler.html#cb12-19" tabindex="-1"></a>    Q_mat <span class="ot">&lt;-</span> Q_mat <span class="sc">+</span> (gamma_nt<span class="sc">^</span><span class="dv">2</span>) <span class="sc">*</span> (s <span class="sc">%*%</span> <span class="fu">t</span>(s))</span>
-<span id="cb12-20"><a href="predictive-resampler.html#cb12-20" tabindex="-1"></a>    <span class="co"># Update parameter</span></span>
-<span id="cb12-21"><a href="predictive-resampler.html#cb12-21" tabindex="-1"></a>    c_curr <span class="ot">&lt;-</span> c_curr <span class="sc">+</span> gamma_nt <span class="sc">*</span> s</span>
-<span id="cb12-22"><a href="predictive-resampler.html#cb12-22" tabindex="-1"></a>  }</span>
-<span id="cb12-23"><a href="predictive-resampler.html#cb12-23" tabindex="-1"></a>  </span>
-<span id="cb12-24"><a href="predictive-resampler.html#cb12-24" tabindex="-1"></a>  <span class="fu">list</span>(</span>
-<span id="cb12-25"><a href="predictive-resampler.html#cb12-25" tabindex="-1"></a>    <span class="at">D_nm =</span> c_curr <span class="sc">-</span> c0,</span>
-<span id="cb12-26"><a href="predictive-resampler.html#cb12-26" tabindex="-1"></a>    <span class="at">Q_nm =</span> Q_mat</span>
-<span id="cb12-27"><a href="predictive-resampler.html#cb12-27" tabindex="-1"></a>  )</span>
-<span id="cb12-28"><a href="predictive-resampler.html#cb12-28" tabindex="-1"></a>}</span>
-<span id="cb12-29"><a href="predictive-resampler.html#cb12-29" tabindex="-1"></a></span>
-<span id="cb12-30"><a href="predictive-resampler.html#cb12-30" tabindex="-1"></a><span class="co">#' Run Hybrid Predictive Resampling for vMF</span></span>
-<span id="cb12-31"><a href="predictive-resampler.html#cb12-31" tabindex="-1"></a><span class="co">#' @param X data matrix (p x n)</span></span>
-<span id="cb12-32"><a href="predictive-resampler.html#cb12-32" tabindex="-1"></a><span class="co">#' @param B number of independent chains</span></span>
-<span id="cb12-33"><a href="predictive-resampler.html#cb12-33" tabindex="-1"></a><span class="co">#' @param M number of early predictive steps</span></span>
-<span id="cb12-34"><a href="predictive-resampler.html#cb12-34" tabindex="-1"></a><span class="co">#' @param n_cores number of cores for parallel processing</span></span>
-<span id="cb12-35"><a href="predictive-resampler.html#cb12-35" tabindex="-1"></a><span class="co">#' @export</span></span>
-<span id="cb12-36"><a href="predictive-resampler.html#cb12-36" tabindex="-1"></a><span id="run_hybrid_vmf">run_hybrid_vmf</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(X, <span class="at">B =</span> <span class="dv">5000</span>, <span class="at">M =</span> <span class="dv">50</span>, <span class="at">n_cores =</span> <span class="dv">1</span>) {</span>
-<span id="cb12-37"><a href="predictive-resampler.html#cb12-37" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">ncol</span>(X)</span>
-<span id="cb12-38"><a href="predictive-resampler.html#cb12-38" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
-<span id="cb12-39"><a href="predictive-resampler.html#cb12-39" tabindex="-1"></a>  </span>
-<span id="cb12-40"><a href="predictive-resampler.html#cb12-40" tabindex="-1"></a>  <span class="co"># 0. Initial Estimate (MLE)</span></span>
-<span id="cb12-41"><a href="predictive-resampler.html#cb12-41" tabindex="-1"></a>  c0 <span class="ot">&lt;-</span> <a href="helpers-functions.html#mle_vmf">mle_vmf</a>(X) </span>
-<span id="cb12-42"><a href="predictive-resampler.html#cb12-42" tabindex="-1"></a>  weights <span class="ot">&lt;-</span> <a href="helpers-functions.html#compute_weights">compute_weights</a>(n, M)</span>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="predictive-resampler.html#cb12-1" tabindex="-1"></a><span class="co">#' Simulate Raw Score Path (Step 1 of Algorithm 1)</span></span>
+<span id="cb12-2"><a href="predictive-resampler.html#cb12-2" tabindex="-1"></a><span class="co">#' @param c0 Initial estimator (MLE)</span></span>
+<span id="cb12-3"><a href="predictive-resampler.html#cb12-3" tabindex="-1"></a><span class="co">#' @param n Initial sample size</span></span>
+<span id="cb12-4"><a href="predictive-resampler.html#cb12-4" tabindex="-1"></a><span class="co">#' @param M Depth (iterations)</span></span>
+<span id="cb12-5"><a href="predictive-resampler.html#cb12-5" tabindex="-1"></a><span class="co">#' @param save_raw Whether to save the trajectory of c_n,m</span></span>
+<span id="cb12-6"><a href="predictive-resampler.html#cb12-6" tabindex="-1"></a><span class="co">#' @return A list containing the raw difference D, quadratic variation Q, and optional path</span></span>
+<span id="cb12-7"><a href="predictive-resampler.html#cb12-7" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb12-8"><a href="predictive-resampler.html#cb12-8" tabindex="-1"></a><span id="simulate_raw_path">simulate_raw_path</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(c0, n, M, <span class="at">save_raw =</span> <span class="cn">FALSE</span>) {</span>
+<span id="cb12-9"><a href="predictive-resampler.html#cb12-9" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">length</span>(c0)</span>
+<span id="cb12-10"><a href="predictive-resampler.html#cb12-10" tabindex="-1"></a>  c_curr <span class="ot">&lt;-</span> c0</span>
+<span id="cb12-11"><a href="predictive-resampler.html#cb12-11" tabindex="-1"></a>  Q_mat <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, p, p)</span>
+<span id="cb12-12"><a href="predictive-resampler.html#cb12-12" tabindex="-1"></a>  </span>
+<span id="cb12-13"><a href="predictive-resampler.html#cb12-13" tabindex="-1"></a>  <span class="cf">if</span> (save_raw) {</span>
+<span id="cb12-14"><a href="predictive-resampler.html#cb12-14" tabindex="-1"></a>    c_chain <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>, p, M <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb12-15"><a href="predictive-resampler.html#cb12-15" tabindex="-1"></a>    c_chain[, <span class="dv">1</span>] <span class="ot">&lt;-</span> c0</span>
+<span id="cb12-16"><a href="predictive-resampler.html#cb12-16" tabindex="-1"></a>  }</span>
+<span id="cb12-17"><a href="predictive-resampler.html#cb12-17" tabindex="-1"></a>  </span>
+<span id="cb12-18"><a href="predictive-resampler.html#cb12-18" tabindex="-1"></a>  <span class="cf">for</span> (m <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>M) {</span>
+<span id="cb12-19"><a href="predictive-resampler.html#cb12-19" tabindex="-1"></a>    gamma_m <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (n <span class="sc">+</span> m)</span>
+<span id="cb12-20"><a href="predictive-resampler.html#cb12-20" tabindex="-1"></a>    </span>
+<span id="cb12-21"><a href="predictive-resampler.html#cb12-21" tabindex="-1"></a>    <span class="co"># 1. Draw X_new ~ vMF(c_curr)</span></span>
+<span id="cb12-22"><a href="predictive-resampler.html#cb12-22" tabindex="-1"></a>    x_new <span class="ot">&lt;-</span> rstiefel<span class="sc">::</span><span class="fu">rmf.vector</span>(c_curr)</span>
+<span id="cb12-23"><a href="predictive-resampler.html#cb12-23" tabindex="-1"></a>    </span>
+<span id="cb12-24"><a href="predictive-resampler.html#cb12-24" tabindex="-1"></a>    <span class="co"># 2. Compute score s</span></span>
+<span id="cb12-25"><a href="predictive-resampler.html#cb12-25" tabindex="-1"></a>    s <span class="ot">&lt;-</span> <a href="helpers-functions.html#score_fn">score_fn</a>(c_curr, x_new, p)</span>
+<span id="cb12-26"><a href="predictive-resampler.html#cb12-26" tabindex="-1"></a>    </span>
+<span id="cb12-27"><a href="predictive-resampler.html#cb12-27" tabindex="-1"></a>    <span class="co"># 3. Accumulate quadratic variation Q</span></span>
+<span id="cb12-28"><a href="predictive-resampler.html#cb12-28" tabindex="-1"></a>    Q_mat <span class="ot">&lt;-</span> Q_mat <span class="sc">+</span> (gamma_m<span class="sc">^</span><span class="dv">2</span>) <span class="sc">*</span> (s <span class="sc">%*%</span> <span class="fu">t</span>(s))</span>
+<span id="cb12-29"><a href="predictive-resampler.html#cb12-29" tabindex="-1"></a>    </span>
+<span id="cb12-30"><a href="predictive-resampler.html#cb12-30" tabindex="-1"></a>    <span class="co"># 4. Raw score update</span></span>
+<span id="cb12-31"><a href="predictive-resampler.html#cb12-31" tabindex="-1"></a>    c_curr <span class="ot">&lt;-</span> c_curr <span class="sc">+</span> gamma_m <span class="sc">*</span> s</span>
+<span id="cb12-32"><a href="predictive-resampler.html#cb12-32" tabindex="-1"></a>    </span>
+<span id="cb12-33"><a href="predictive-resampler.html#cb12-33" tabindex="-1"></a>    <span class="cf">if</span> (save_raw) {</span>
+<span id="cb12-34"><a href="predictive-resampler.html#cb12-34" tabindex="-1"></a>      c_chain[, m <span class="sc">+</span> <span class="dv">1</span>] <span class="ot">&lt;-</span> c_curr</span>
+<span id="cb12-35"><a href="predictive-resampler.html#cb12-35" tabindex="-1"></a>    }</span>
+<span id="cb12-36"><a href="predictive-resampler.html#cb12-36" tabindex="-1"></a>  }</span>
+<span id="cb12-37"><a href="predictive-resampler.html#cb12-37" tabindex="-1"></a>  </span>
+<span id="cb12-38"><a href="predictive-resampler.html#cb12-38" tabindex="-1"></a>  res <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb12-39"><a href="predictive-resampler.html#cb12-39" tabindex="-1"></a>    <span class="at">D_raw =</span> c_curr <span class="sc">-</span> c0, <span class="co"># Raw difference (c_n,M - c_n,0)</span></span>
+<span id="cb12-40"><a href="predictive-resampler.html#cb12-40" tabindex="-1"></a>    <span class="at">Q_nM  =</span> Q_mat,</span>
+<span id="cb12-41"><a href="predictive-resampler.html#cb12-41" tabindex="-1"></a>    <span class="at">c_final_raw =</span> c_curr</span>
+<span id="cb12-42"><a href="predictive-resampler.html#cb12-42" tabindex="-1"></a>  )</span>
 <span id="cb12-43"><a href="predictive-resampler.html#cb12-43" tabindex="-1"></a>  </span>
-<span id="cb12-44"><a href="predictive-resampler.html#cb12-44" tabindex="-1"></a>  <span class="co"># 1. Run B chains to get Early Path data (Parallelized)</span></span>
-<span id="cb12-45"><a href="predictive-resampler.html#cb12-45" tabindex="-1"></a>  early_results <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(<span class="dv">1</span><span class="sc">:</span>B, <span class="cf">function</span>(b) {</span>
-<span id="cb12-46"><a href="predictive-resampler.html#cb12-46" tabindex="-1"></a>    <a href="predictive-resampler.html#run_early_path">run_early_path</a>(c0, n, M)</span>
-<span id="cb12-47"><a href="predictive-resampler.html#cb12-47" tabindex="-1"></a>  }, <span class="at">mc.cores =</span> n_cores)</span>
-<span id="cb12-48"><a href="predictive-resampler.html#cb12-48" tabindex="-1"></a>  </span>
-<span id="cb12-49"><a href="predictive-resampler.html#cb12-49" tabindex="-1"></a>  <span class="co"># Extract Ds and Qs</span></span>
-<span id="cb12-50"><a href="predictive-resampler.html#cb12-50" tabindex="-1"></a>  D_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(early_results, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"D_nm"</span>)</span>
-<span id="cb12-51"><a href="predictive-resampler.html#cb12-51" tabindex="-1"></a>  Q_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(early_results, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"Q_nm"</span>)</span>
-<span id="cb12-52"><a href="predictive-resampler.html#cb12-52" tabindex="-1"></a>  </span>
-<span id="cb12-53"><a href="predictive-resampler.html#cb12-53" tabindex="-1"></a>  <span class="co"># 2. Pooling (Section 1 &amp; 5 of methodology)</span></span>
-<span id="cb12-54"><a href="predictive-resampler.html#cb12-54" tabindex="-1"></a>  bar_Q_nm <span class="ot">&lt;-</span> <span class="fu">Reduce</span>(<span class="st">"+"</span>, Q_list) <span class="sc">/</span> B</span>
-<span id="cb12-55"><a href="predictive-resampler.html#cb12-55" tabindex="-1"></a>  hat_I_nm <span class="ot">&lt;-</span> bar_Q_nm <span class="sc">/</span> weights<span class="sc">$</span>W_nm</span>
-<span id="cb12-56"><a href="predictive-resampler.html#cb12-56" tabindex="-1"></a>  </span>
-<span id="cb12-57"><a href="predictive-resampler.html#cb12-57" tabindex="-1"></a>  <span class="co"># Inversion helper with stabilization</span></span>
-<span id="cb12-58"><a href="predictive-resampler.html#cb12-58" tabindex="-1"></a>  <span id="safe_inv">safe_inv</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(Mat) {</span>
-<span id="cb12-59"><a href="predictive-resampler.html#cb12-59" tabindex="-1"></a>    eig <span class="ot">&lt;-</span> <span class="fu">eigen</span>((Mat <span class="sc">+</span> <span class="fu">t</span>(Mat)) <span class="sc">/</span> <span class="dv">2</span>)</span>
-<span id="cb12-60"><a href="predictive-resampler.html#cb12-60" tabindex="-1"></a>    vals_inv <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">pmax</span>(eig<span class="sc">$</span>values, <span class="fl">1e-10</span>)</span>
-<span id="cb12-61"><a href="predictive-resampler.html#cb12-61" tabindex="-1"></a>    eig<span class="sc">$</span>vectors <span class="sc">%*%</span> <span class="fu">diag</span>(vals_inv) <span class="sc">%*%</span> <span class="fu">t</span>(eig<span class="sc">$</span>vectors)</span>
-<span id="cb12-62"><a href="predictive-resampler.html#cb12-62" tabindex="-1"></a>  }</span>
-<span id="cb12-63"><a href="predictive-resampler.html#cb12-63" tabindex="-1"></a>  hat_I_inv <span class="ot">&lt;-</span> <a href="predictive-resampler.html#safe_inv">safe_inv</a>(hat_I_nm)</span>
-<span id="cb12-64"><a href="predictive-resampler.html#cb12-64" tabindex="-1"></a>  </span>
-<span id="cb12-65"><a href="predictive-resampler.html#cb12-65" tabindex="-1"></a>  <span class="co"># 3. Tail Generation and Post-hoc Correction (Section 8)</span></span>
-<span id="cb12-66"><a href="predictive-resampler.html#cb12-66" tabindex="-1"></a>  <span class="co"># Tail variance: R_nm * hat_I_nm</span></span>
-<span id="cb12-67"><a href="predictive-resampler.html#cb12-67" tabindex="-1"></a>  tail_cov <span class="ot">&lt;-</span> weights<span class="sc">$</span>R_nm <span class="sc">*</span> hat_I_nm</span>
-<span id="cb12-68"><a href="predictive-resampler.html#cb12-68" tabindex="-1"></a>  <span class="co"># Pre-calculate matrix square root for tail sampling: Z ~ N(0, tail_cov)</span></span>
-<span id="cb12-69"><a href="predictive-resampler.html#cb12-69" tabindex="-1"></a>  tail_eig <span class="ot">&lt;-</span> <span class="fu">eigen</span>(tail_cov)</span>
-<span id="cb12-70"><a href="predictive-resampler.html#cb12-70" tabindex="-1"></a>  tail_sqrt <span class="ot">&lt;-</span> tail_eig<span class="sc">$</span>vectors <span class="sc">%*%</span> <span class="fu">diag</span>(<span class="fu">sqrt</span>(<span class="fu">pmax</span>(tail_eig<span class="sc">$</span>values, <span class="dv">0</span>))) <span class="sc">%*%</span> <span class="fu">t</span>(tail_eig<span class="sc">$</span>vectors)</span>
-<span id="cb12-71"><a href="predictive-resampler.html#cb12-71" tabindex="-1"></a>  </span>
-<span id="cb12-72"><a href="predictive-resampler.html#cb12-72" tabindex="-1"></a>  c_final_samples <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>B, <span class="cf">function</span>(b) {</span>
-<span id="cb12-73"><a href="predictive-resampler.html#cb12-73" tabindex="-1"></a>    <span class="co"># Generate Gaussian Tail Z</span></span>
-<span id="cb12-74"><a href="predictive-resampler.html#cb12-74" tabindex="-1"></a>    Z_nm <span class="ot">&lt;-</span> tail_sqrt <span class="sc">%*%</span> <span class="fu">rnorm</span>(p)</span>
-<span id="cb12-75"><a href="predictive-resampler.html#cb12-75" tabindex="-1"></a>    <span class="co"># Apply Correction: c_hyb = c0 + I_inv * (D + Z)</span></span>
-<span id="cb12-76"><a href="predictive-resampler.html#cb12-76" tabindex="-1"></a>    c_hyb <span class="ot">&lt;-</span> c0 <span class="sc">+</span> hat_I_inv <span class="sc">%*%</span> (D_list[[b]] <span class="sc">+</span> Z_nm)</span>
-<span id="cb12-77"><a href="predictive-resampler.html#cb12-77" tabindex="-1"></a>    <span class="fu">return</span>(c_hyb)</span>
-<span id="cb12-78"><a href="predictive-resampler.html#cb12-78" tabindex="-1"></a>  })</span>
-<span id="cb12-79"><a href="predictive-resampler.html#cb12-79" tabindex="-1"></a>  </span>
-<span id="cb12-80"><a href="predictive-resampler.html#cb12-80" tabindex="-1"></a>  <span class="co"># 4. Transform to Polar for output</span></span>
-<span id="cb12-81"><a href="predictive-resampler.html#cb12-81" tabindex="-1"></a>  kappa_sam <span class="ot">&lt;-</span> <span class="fu">apply</span>(c_final_samples, <span class="dv">2</span>, <span class="cf">function</span>(v) <span class="fu">sqrt</span>(<span class="fu">sum</span>(v<span class="sc">^</span><span class="dv">2</span>)))</span>
-<span id="cb12-82"><a href="predictive-resampler.html#cb12-82" tabindex="-1"></a>  <span class="cf">if</span> (p <span class="sc">==</span> <span class="dv">2</span>) {</span>
-<span id="cb12-83"><a href="predictive-resampler.html#cb12-83" tabindex="-1"></a>    <span class="co"># Convert to angles if dimension is 2</span></span>
-<span id="cb12-84"><a href="predictive-resampler.html#cb12-84" tabindex="-1"></a>    mu_sam <span class="ot">&lt;-</span> <span class="fu">apply</span>(c_final_samples, <span class="dv">2</span>, <span class="cf">function</span>(v) <span class="fu">atan2</span>(v[<span class="dv">2</span>], v[<span class="dv">1</span>]))</span>
-<span id="cb12-85"><a href="predictive-resampler.html#cb12-85" tabindex="-1"></a>  }<span class="cf">else</span>{ mu_sam <span class="ot">&lt;-</span> <span class="fu">sweep</span>(c_final_samples, <span class="dv">2</span>, kappa_sam, <span class="st">"/"</span>)}</span>
-<span id="cb12-86"><a href="predictive-resampler.html#cb12-86" tabindex="-1"></a>  </span>
-<span id="cb12-87"><a href="predictive-resampler.html#cb12-87" tabindex="-1"></a>  <span class="fu">list</span>(</span>
-<span id="cb12-88"><a href="predictive-resampler.html#cb12-88" tabindex="-1"></a>    <span class="at">samples =</span> <span class="fu">list</span>(</span>
-<span id="cb12-89"><a href="predictive-resampler.html#cb12-89" tabindex="-1"></a>      <span class="at">c_sam =</span> c_final_samples,</span>
-<span id="cb12-90"><a href="predictive-resampler.html#cb12-90" tabindex="-1"></a>      <span class="at">mu_sam =</span> mu_sam,</span>
-<span id="cb12-91"><a href="predictive-resampler.html#cb12-91" tabindex="-1"></a>      <span class="at">kappa_sam =</span> kappa_sam</span>
-<span id="cb12-92"><a href="predictive-resampler.html#cb12-92" tabindex="-1"></a>    ),</span>
-<span id="cb12-93"><a href="predictive-resampler.html#cb12-93" tabindex="-1"></a>    <span class="at">info_matrix =</span> hat_I_nm</span>
-<span id="cb12-94"><a href="predictive-resampler.html#cb12-94" tabindex="-1"></a>  )</span>
-<span id="cb12-95"><a href="predictive-resampler.html#cb12-95" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb12-44"><a href="predictive-resampler.html#cb12-44" tabindex="-1"></a>  <span class="cf">if</span> (save_raw) res<span class="sc">$</span>c_chain <span class="ot">&lt;-</span> c_chain</span>
+<span id="cb12-45"><a href="predictive-resampler.html#cb12-45" tabindex="-1"></a>  <span class="fu">return</span>(res)</span>
+<span id="cb12-46"><a href="predictive-resampler.html#cb12-46" tabindex="-1"></a>}</span>
+<span id="cb12-47"><a href="predictive-resampler.html#cb12-47" tabindex="-1"></a></span>
+<span id="cb12-48"><a href="predictive-resampler.html#cb12-48" tabindex="-1"></a><span class="co">#' Score-Only Martingale Posterior Sampler for vMF</span></span>
+<span id="cb12-49"><a href="predictive-resampler.html#cb12-49" tabindex="-1"></a><span class="co">#' @param X Data matrix (p x n)</span></span>
+<span id="cb12-50"><a href="predictive-resampler.html#cb12-50" tabindex="-1"></a><span class="co">#' @param B Number of chains</span></span>
+<span id="cb12-51"><a href="predictive-resampler.html#cb12-51" tabindex="-1"></a><span class="co">#' @param M Depth M</span></span>
+<span id="cb12-52"><a href="predictive-resampler.html#cb12-52" tabindex="-1"></a><span class="co">#' @param type "RS-PC" or "HRS-PC"</span></span>
+<span id="cb12-53"><a href="predictive-resampler.html#cb12-53" tabindex="-1"></a><span class="co">#' @param cal "pooled" or "pathwise"</span></span>
+<span id="cb12-54"><a href="predictive-resampler.html#cb12-54" tabindex="-1"></a><span class="co">#' @param n_cores Number of cores</span></span>
+<span id="cb12-55"><a href="predictive-resampler.html#cb12-55" tabindex="-1"></a><span class="co">#' @param save_raw Whether to return the raw score paths</span></span>
+<span id="cb12-56"><a href="predictive-resampler.html#cb12-56" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb12-57"><a href="predictive-resampler.html#cb12-57" tabindex="-1"></a><span id="run_predresamp_vmf">run_predresamp_vmf</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(X, <span class="at">B =</span> <span class="dv">5000</span>, <span class="at">M =</span> <span class="dv">50</span>, </span>
+<span id="cb12-58"><a href="predictive-resampler.html#cb12-58" tabindex="-1"></a>                            <span class="at">type =</span> <span class="fu">c</span>(<span class="st">"HRS-PC"</span>, <span class="st">"RS-PC"</span>), </span>
+<span id="cb12-59"><a href="predictive-resampler.html#cb12-59" tabindex="-1"></a>                            <span class="at">cal =</span> <span class="fu">c</span>(<span class="st">"pooled"</span>, <span class="st">"pathwise"</span>), </span>
+<span id="cb12-60"><a href="predictive-resampler.html#cb12-60" tabindex="-1"></a>                            <span class="at">n_cores =</span> <span class="dv">1</span>, </span>
+<span id="cb12-61"><a href="predictive-resampler.html#cb12-61" tabindex="-1"></a>                            <span class="at">save_raw =</span> <span class="cn">FALSE</span>) {</span>
+<span id="cb12-62"><a href="predictive-resampler.html#cb12-62" tabindex="-1"></a>  type <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(type)</span>
+<span id="cb12-63"><a href="predictive-resampler.html#cb12-63" tabindex="-1"></a>  cal  <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(cal)</span>
+<span id="cb12-64"><a href="predictive-resampler.html#cb12-64" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">ncol</span>(X)</span>
+<span id="cb12-65"><a href="predictive-resampler.html#cb12-65" tabindex="-1"></a>  p <span class="ot">&lt;-</span> <span class="fu">nrow</span>(X)</span>
+<span id="cb12-66"><a href="predictive-resampler.html#cb12-66" tabindex="-1"></a>  </span>
+<span id="cb12-67"><a href="predictive-resampler.html#cb12-67" tabindex="-1"></a>  <span class="co"># --- Step 0: Global Setup ---</span></span>
+<span id="cb12-68"><a href="predictive-resampler.html#cb12-68" tabindex="-1"></a>  c0 <span class="ot">&lt;-</span> <a href="helpers-functions.html#mle_vmf">mle_vmf</a>(X)</span>
+<span id="cb12-69"><a href="predictive-resampler.html#cb12-69" tabindex="-1"></a>  weights <span class="ot">&lt;-</span> <a href="helpers-functions.html#compute_weights">compute_weights</a>(n, M) <span class="co"># Should return w_nM and r_nM</span></span>
+<span id="cb12-70"><a href="predictive-resampler.html#cb12-70" tabindex="-1"></a>  w_nM <span class="ot">&lt;-</span> weights<span class="sc">$</span>W_nm</span>
+<span id="cb12-71"><a href="predictive-resampler.html#cb12-71" tabindex="-1"></a>  r_nM <span class="ot">&lt;-</span> weights<span class="sc">$</span>R_nm</span>
+<span id="cb12-72"><a href="predictive-resampler.html#cb12-72" tabindex="-1"></a>  </span>
+<span id="cb12-73"><a href="predictive-resampler.html#cb12-73" tabindex="-1"></a>  <span class="co"># --- Step 1: Simulate Raw Score Paths (Parallel) ---</span></span>
+<span id="cb12-74"><a href="predictive-resampler.html#cb12-74" tabindex="-1"></a>  raw_results <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">mclapply</span>(<span class="dv">1</span><span class="sc">:</span>B, <span class="cf">function</span>(b) {</span>
+<span id="cb12-75"><a href="predictive-resampler.html#cb12-75" tabindex="-1"></a>    <a href="predictive-resampler.html#simulate_raw_path">simulate_raw_path</a>(c0, n, M, <span class="at">save_raw =</span> save_raw)</span>
+<span id="cb12-76"><a href="predictive-resampler.html#cb12-76" tabindex="-1"></a>  }, <span class="at">mc.cores =</span> n_cores)</span>
+<span id="cb12-77"><a href="predictive-resampler.html#cb12-77" tabindex="-1"></a>  </span>
+<span id="cb12-78"><a href="predictive-resampler.html#cb12-78" tabindex="-1"></a>  <span class="co"># --- Step 2: Construct Calibration Estimator ---</span></span>
+<span id="cb12-79"><a href="predictive-resampler.html#cb12-79" tabindex="-1"></a>  <span class="cf">if</span> (cal <span class="sc">==</span> <span class="st">"pooled"</span>) {</span>
+<span id="cb12-80"><a href="predictive-resampler.html#cb12-80" tabindex="-1"></a>    Q_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(raw_results, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"Q_nM"</span>)</span>
+<span id="cb12-81"><a href="predictive-resampler.html#cb12-81" tabindex="-1"></a>    bar_Q <span class="ot">&lt;-</span> <span class="fu">Reduce</span>(<span class="st">"+"</span>, Q_list) <span class="sc">/</span> B</span>
+<span id="cb12-82"><a href="predictive-resampler.html#cb12-82" tabindex="-1"></a>    I_pool <span class="ot">&lt;-</span> bar_Q <span class="sc">/</span> w_nM</span>
+<span id="cb12-83"><a href="predictive-resampler.html#cb12-83" tabindex="-1"></a>  }</span>
+<span id="cb12-84"><a href="predictive-resampler.html#cb12-84" tabindex="-1"></a>  </span>
+<span id="cb12-85"><a href="predictive-resampler.html#cb12-85" tabindex="-1"></a>  <span class="co"># --- Step 3: Return Posterior Draws ---</span></span>
+<span id="cb12-86"><a href="predictive-resampler.html#cb12-86" tabindex="-1"></a>  <span class="co"># Define Post-correction helper C_epsilon</span></span>
+<span id="cb12-87"><a href="predictive-resampler.html#cb12-87" tabindex="-1"></a>  <span id="correct_fn">correct_fn</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(diff_vec, I_mat) {</span>
+<span id="cb12-88"><a href="predictive-resampler.html#cb12-88" tabindex="-1"></a>    c0 <span class="sc">+</span> <a href="helpers-functions.html#safe_sym_inverse">safe_sym_inverse</a>(I_mat) <span class="sc">%*%</span> diff_vec</span>
+<span id="cb12-89"><a href="predictive-resampler.html#cb12-89" tabindex="-1"></a>  }</span>
+<span id="cb12-90"><a href="predictive-resampler.html#cb12-90" tabindex="-1"></a>  </span>
+<span id="cb12-91"><a href="predictive-resampler.html#cb12-91" tabindex="-1"></a>  posterior_samples <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>B, <span class="cf">function</span>(b) {</span>
+<span id="cb12-92"><a href="predictive-resampler.html#cb12-92" tabindex="-1"></a>    <span class="co"># Get I estimator for this chain</span></span>
+<span id="cb12-93"><a href="predictive-resampler.html#cb12-93" tabindex="-1"></a>    I_b <span class="ot">&lt;-</span> <span class="cf">if</span> (cal <span class="sc">==</span> <span class="st">"pathwise"</span>) raw_results[[b]]<span class="sc">$</span>Q_nM <span class="sc">/</span> w_nM <span class="cf">else</span> I_pool</span>
+<span id="cb12-94"><a href="predictive-resampler.html#cb12-94" tabindex="-1"></a>    </span>
+<span id="cb12-95"><a href="predictive-resampler.html#cb12-95" tabindex="-1"></a>    D_b <span class="ot">&lt;-</span> raw_results[[b]]<span class="sc">$</span>D_raw</span>
+<span id="cb12-96"><a href="predictive-resampler.html#cb12-96" tabindex="-1"></a>    </span>
+<span id="cb12-97"><a href="predictive-resampler.html#cb12-97" tabindex="-1"></a>    <span class="cf">if</span> (type <span class="sc">==</span> <span class="st">"RS-PC"</span>) {</span>
+<span id="cb12-98"><a href="predictive-resampler.html#cb12-98" tabindex="-1"></a>      <span class="co"># Standard correction: c_out = C(c_nM)</span></span>
+<span id="cb12-99"><a href="predictive-resampler.html#cb12-99" tabindex="-1"></a>      c_out <span class="ot">&lt;-</span> <a href="predictive-resampler.html#correct_fn">correct_fn</a>(D_b, I_b)</span>
+<span id="cb12-100"><a href="predictive-resampler.html#cb12-100" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb12-101"><a href="predictive-resampler.html#cb12-101" tabindex="-1"></a>      <span class="co"># Hybrid correction: c_out = C(c_nM + Z)</span></span>
+<span id="cb12-102"><a href="predictive-resampler.html#cb12-102" tabindex="-1"></a>      <span class="co"># Draw Gaussian Tail Z ~ N(0, r_nM * I_b)</span></span>
+<span id="cb12-103"><a href="predictive-resampler.html#cb12-103" tabindex="-1"></a>      tail_cov <span class="ot">&lt;-</span> r_nM <span class="sc">*</span> I_b</span>
+<span id="cb12-104"><a href="predictive-resampler.html#cb12-104" tabindex="-1"></a>      <span class="co"># Matrix sqrt for sampling</span></span>
+<span id="cb12-105"><a href="predictive-resampler.html#cb12-105" tabindex="-1"></a>      e <span class="ot">&lt;-</span> <span class="fu">eigen</span>(tail_cov)</span>
+<span id="cb12-106"><a href="predictive-resampler.html#cb12-106" tabindex="-1"></a>      Z_b <span class="ot">&lt;-</span> (e<span class="sc">$</span>vectors <span class="sc">%*%</span> <span class="fu">diag</span>(<span class="fu">sqrt</span>(<span class="fu">pmax</span>(e<span class="sc">$</span>values, <span class="dv">0</span>)), p) <span class="sc">%*%</span> <span class="fu">t</span>(e<span class="sc">$</span>vectors)) <span class="sc">%*%</span> <span class="fu">rnorm</span>(p)</span>
+<span id="cb12-107"><a href="predictive-resampler.html#cb12-107" tabindex="-1"></a>      c_out <span class="ot">&lt;-</span> <a href="predictive-resampler.html#correct_fn">correct_fn</a>(D_b <span class="sc">+</span> Z_b, I_b)</span>
+<span id="cb12-108"><a href="predictive-resampler.html#cb12-108" tabindex="-1"></a>    }</span>
+<span id="cb12-109"><a href="predictive-resampler.html#cb12-109" tabindex="-1"></a>    <span class="fu">return</span>(c_out)</span>
+<span id="cb12-110"><a href="predictive-resampler.html#cb12-110" tabindex="-1"></a>  })</span>
+<span id="cb12-111"><a href="predictive-resampler.html#cb12-111" tabindex="-1"></a>  </span>
+<span id="cb12-112"><a href="predictive-resampler.html#cb12-112" tabindex="-1"></a>  <span class="co"># Transform to Polar for consistency with your previous code</span></span>
+<span id="cb12-113"><a href="predictive-resampler.html#cb12-113" tabindex="-1"></a>  kappa_sam <span class="ot">&lt;-</span> <span class="fu">apply</span>(posterior_samples, <span class="dv">2</span>, <span class="cf">function</span>(v) <span class="fu">sqrt</span>(<span class="fu">sum</span>(v<span class="sc">^</span><span class="dv">2</span>)))</span>
+<span id="cb12-114"><a href="predictive-resampler.html#cb12-114" tabindex="-1"></a>  <span class="cf">if</span> (p <span class="sc">==</span> <span class="dv">2</span>) {</span>
+<span id="cb12-115"><a href="predictive-resampler.html#cb12-115" tabindex="-1"></a>    mu_sam <span class="ot">&lt;-</span> <span class="fu">apply</span>(posterior_samples, <span class="dv">2</span>, <span class="cf">function</span>(v) {</span>
+<span id="cb12-116"><a href="predictive-resampler.html#cb12-116" tabindex="-1"></a>      res <span class="ot">&lt;-</span> <span class="fu">atan2</span>(v[<span class="dv">2</span>], v[<span class="dv">1</span>])</span>
+<span id="cb12-117"><a href="predictive-resampler.html#cb12-117" tabindex="-1"></a>      <span class="cf">if</span> (res <span class="sc">&lt;</span> <span class="dv">0</span>) res <span class="ot">&lt;-</span> res <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> pi</span>
+<span id="cb12-118"><a href="predictive-resampler.html#cb12-118" tabindex="-1"></a>      <span class="fu">return</span>(res)</span>
+<span id="cb12-119"><a href="predictive-resampler.html#cb12-119" tabindex="-1"></a>    })</span>
+<span id="cb12-120"><a href="predictive-resampler.html#cb12-120" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb12-121"><a href="predictive-resampler.html#cb12-121" tabindex="-1"></a>    mu_sam <span class="ot">&lt;-</span> <span class="fu">sweep</span>(posterior_samples, <span class="dv">2</span>, kappa_sam, <span class="st">"/"</span>)</span>
+<span id="cb12-122"><a href="predictive-resampler.html#cb12-122" tabindex="-1"></a>  }</span>
+<span id="cb12-123"><a href="predictive-resampler.html#cb12-123" tabindex="-1"></a>  </span>
+<span id="cb12-124"><a href="predictive-resampler.html#cb12-124" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb12-125"><a href="predictive-resampler.html#cb12-125" tabindex="-1"></a>    <span class="at">samples =</span> <span class="fu">list</span>(</span>
+<span id="cb12-126"><a href="predictive-resampler.html#cb12-126" tabindex="-1"></a>      <span class="at">c_sam =</span> posterior_samples,</span>
+<span id="cb12-127"><a href="predictive-resampler.html#cb12-127" tabindex="-1"></a>      <span class="at">mu_sam =</span> mu_sam,</span>
+<span id="cb12-128"><a href="predictive-resampler.html#cb12-128" tabindex="-1"></a>      <span class="at">kappa_sam =</span> kappa_sam</span>
+<span id="cb12-129"><a href="predictive-resampler.html#cb12-129" tabindex="-1"></a>    ),</span>
+<span id="cb12-130"><a href="predictive-resampler.html#cb12-130" tabindex="-1"></a>    <span class="at">setup =</span> <span class="fu">list</span>(<span class="at">type =</span> type, <span class="at">cal =</span> cal, <span class="at">I_pool =</span> <span class="cf">if</span>(cal<span class="sc">==</span><span class="st">"pooled"</span>) I_pool <span class="cf">else</span> <span class="cn">NULL</span>)</span>
+<span id="cb12-131"><a href="predictive-resampler.html#cb12-131" tabindex="-1"></a>  )</span>
+<span id="cb12-132"><a href="predictive-resampler.html#cb12-132" tabindex="-1"></a>  </span>
+<span id="cb12-133"><a href="predictive-resampler.html#cb12-133" tabindex="-1"></a>  <span class="co"># If requested, save the raw paths from Step 1</span></span>
+<span id="cb12-134"><a href="predictive-resampler.html#cb12-134" tabindex="-1"></a>  <span class="cf">if</span> (save_raw) {</span>
+<span id="cb12-135"><a href="predictive-resampler.html#cb12-135" tabindex="-1"></a>    out<span class="sc">$</span>raw_chains <span class="ot">&lt;-</span> <span class="fu">lapply</span>(raw_results, <span class="st">`</span><span class="at">[[</span><span class="st">`</span>, <span class="st">"c_chain"</span>)</span>
+<span id="cb12-136"><a href="predictive-resampler.html#cb12-136" tabindex="-1"></a>  }</span>
+<span id="cb12-137"><a href="predictive-resampler.html#cb12-137" tabindex="-1"></a>  </span>
+<span id="cb12-138"><a href="predictive-resampler.html#cb12-138" tabindex="-1"></a>  <span class="fu">return</span>(out)</span>
+<span id="cb12-139"><a href="predictive-resampler.html#cb12-139" tabindex="-1"></a>}</span></code></pre></div>
 
 </div>
 </div>

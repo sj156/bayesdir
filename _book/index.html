@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-26">
+<meta name="date" content="2026-05-29">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -108,13 +108,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <nav role="navigation"><ul class="summary">
 <li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introduction</a></li>
 <li class="chapter" data-level="2" data-path="package-setup.html"><a href="package-setup.html"><i class="fa fa-check"></i><b>2</b> Package setup</a></li>
-<li class="chapter" data-level="3" data-path="helpers-functions.html"><a href="helpers-functions.html"><i class="fa fa-check"></i><b>3</b> Helpers functions</a></li>
+<li class="chapter" data-level="3" data-path="helpers-functions.html">
+<a href="helpers-functions.html"><i class="fa fa-check"></i><b>3</b> Helpers functions</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="helpers-functions.html"><a href="helpers-functions.html#summarize-functions"><i class="fa fa-check"></i><b>3.1</b> Summarize functions</a></li>
+<li class="chapter" data-level="3.2" data-path="helpers-functions.html"><a href="helpers-functions.html#plot-functions"><i class="fa fa-check"></i><b>3.2</b> Plot Functions</a></li>
+</ul>
+</li>
 <li class="chapter" data-level="4" data-path="syntheticdata.html"><a href="syntheticdata.html"><i class="fa fa-check"></i><b>4</b> Generating synthetic data</a></li>
 <li class="chapter" data-level="5" data-path="predictive-resampler.html">
 <a href="predictive-resampler.html"><i class="fa fa-check"></i><b>5</b> Predictive Resampler</a>
 <ul>
 <li class="chapter" data-level="5.1" data-path="predictive-resampler.html"><a href="predictive-resampler.html#the-main-sampler"><i class="fa fa-check"></i><b>5.1</b> The main sampler</a></li>
-<li class="chapter" data-level="5.2" data-path="predictive-resampler.html"><a href="predictive-resampler.html#hybrid-method-and-related-code"><i class="fa fa-check"></i><b>5.2</b> Hybrid Method and related code</a></li>
 </ul>
 </li>
 <li class="chapter" data-level="6" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html">
@@ -124,7 +129,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="6.2" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#bayesian-inference-on-a-conjugate-prior-with-p2."><i class="fa fa-check"></i><b>6.2</b> Bayesian Inference on a conjugate prior with p=2.</a></li>
 <li class="chapter" data-level="6.3" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#a-simple-example-for-mps-to-help-you-draw-graphies-in-the-paper"><i class="fa fa-check"></i><b>6.3</b> A simple example for MPS to help you draw graphies in the paper</a></li>
 <li class="chapter" data-level="6.4" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#comparison-between-mcmc-and-mps-method."><i class="fa fa-check"></i><b>6.4</b> Comparison between MCMC and MPS Method.</a></li>
-<li class="chapter" data-level="6.5" data-path="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html"><a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#simulation-for-hybrid-method"><i class="fa fa-check"></i><b>6.5</b> Simulation for Hybrid Method</a></li>
 </ul>
 </li>
 <li class="chapter" data-level="7" data-path="oscar-real-data-application.html">
@@ -155,7 +159,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
             <section class="normal" id="section-"><div id="header">
 <h1 class="title">Creating the <code>bayesdir</code> R package</h1>
 <p class="author"><em>Sheng Jiang</em></p>
-<p class="date"><em>2026-05-26</em></p>
+<p class="date"><em>2026-05-29</em></p>
 </div>
 <div id="introduction" class="section level1 hasAnchor" number="1">
 <h1>
@@ -169,25 +173,24 @@ package are both created using one simple command:</p>
 <span id="cb1-2"><a href="index.html#cb1-2" tabindex="-1"></a><span class="do">## install.packages("./bayesdir/", repos = NULL, type="source") </span></span></code></pre></div>
 <p>This line is purely for testing (to be deleted later!).</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="index.html#cb2-1" tabindex="-1"></a><span class="co"># Complete development workflow</span></span>
-<span id="cb2-2"><a href="index.html#cb2-2" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">"~/repos/bayesdir/"</span>) </span>
-<span id="cb2-3"><a href="index.html#cb2-3" tabindex="-1"></a><span id="my_load">my_load</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(){</span>
-<span id="cb2-4"><a href="index.html#cb2-4" tabindex="-1"></a>  litr<span class="sc">::</span><span class="fu">render</span>(<span class="st">"index.Rmd"</span>,  </span>
-<span id="cb2-5"><a href="index.html#cb2-5" tabindex="-1"></a>               <span class="at">output_format =</span> litr<span class="sc">::</span><span class="fu">litr_gitbook</span>(<span class="at">minimal_eval =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb2-6"><a href="index.html#cb2-6" tabindex="-1"></a>  devtools<span class="sc">::</span><span class="fu">document</span>(<span class="st">"./bayesdir"</span>)  <span class="co"># Update documentation</span></span>
-<span id="cb2-7"><a href="index.html#cb2-7" tabindex="-1"></a>  devtools<span class="sc">::</span><span class="fu">load_all</span>(<span class="st">"./bayesdir"</span>)</span>
-<span id="cb2-8"><a href="index.html#cb2-8" tabindex="-1"></a>}</span>
-<span id="cb2-9"><a href="index.html#cb2-9" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="index.html#cb2-10" tabindex="-1"></a><a href="index.html#my_load">my_load</a>()</span>
-<span id="cb2-11"><a href="index.html#cb2-11" tabindex="-1"></a></span>
-<span id="cb2-12"><a href="index.html#cb2-12" tabindex="-1"></a><span class="co"># Step 2: Check the package (optional but recommended)</span></span>
-<span id="cb2-13"><a href="index.html#cb2-13" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">check</span>(<span class="st">"./bayesdir"</span>, <span class="at">document =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb2-14"><a href="index.html#cb2-14" tabindex="-1"></a></span>
-<span id="cb2-15"><a href="index.html#cb2-15" tabindex="-1"></a><span class="co"># Step 3: Install the package locally for full installation</span></span>
-<span id="cb2-16"><a href="index.html#cb2-16" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install</span>(<span class="st">"./bayesdir"</span>)</span>
-<span id="cb2-17"><a href="index.html#cb2-17" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="index.html#cb2-18" tabindex="-1"></a><span class="co"># Step 4: Load the installed package (optional, if you want to test installation)</span></span>
-<span id="cb2-19"><a href="index.html#cb2-19" tabindex="-1"></a><span class="fu">library</span>(bayesdir)</span>
-<span id="cb2-20"><a href="index.html#cb2-20" tabindex="-1"></a></span></code></pre></div>
+<span id="cb2-2"><a href="index.html#cb2-2" tabindex="-1"></a><span id="my_load">my_load</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(){</span>
+<span id="cb2-3"><a href="index.html#cb2-3" tabindex="-1"></a>  litr<span class="sc">::</span><span class="fu">render</span>(<span class="st">"index.Rmd"</span>,  </span>
+<span id="cb2-4"><a href="index.html#cb2-4" tabindex="-1"></a>               <span class="at">output_format =</span> litr<span class="sc">::</span><span class="fu">litr_gitbook</span>(<span class="at">minimal_eval =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb2-5"><a href="index.html#cb2-5" tabindex="-1"></a>  devtools<span class="sc">::</span><span class="fu">document</span>(<span class="st">"./bayesdir"</span>)  <span class="co"># Update documentation</span></span>
+<span id="cb2-6"><a href="index.html#cb2-6" tabindex="-1"></a>  devtools<span class="sc">::</span><span class="fu">load_all</span>(<span class="st">"./bayesdir"</span>)</span>
+<span id="cb2-7"><a href="index.html#cb2-7" tabindex="-1"></a>}</span>
+<span id="cb2-8"><a href="index.html#cb2-8" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="index.html#cb2-9" tabindex="-1"></a><a href="index.html#my_load">my_load</a>()</span>
+<span id="cb2-10"><a href="index.html#cb2-10" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="index.html#cb2-11" tabindex="-1"></a><span class="co"># Step 2: Check the package (optional but recommended)</span></span>
+<span id="cb2-12"><a href="index.html#cb2-12" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">check</span>(<span class="st">"./bayesdir"</span>, <span class="at">document =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-13"><a href="index.html#cb2-13" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="index.html#cb2-14" tabindex="-1"></a><span class="co"># Step 3: Install the package locally for full installation</span></span>
+<span id="cb2-15"><a href="index.html#cb2-15" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install</span>(<span class="st">"./bayesdir"</span>)</span>
+<span id="cb2-16"><a href="index.html#cb2-16" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="index.html#cb2-17" tabindex="-1"></a><span class="co"># Step 4: Load the installed package (optional, if you want to test installation)</span></span>
+<span id="cb2-18"><a href="index.html#cb2-18" tabindex="-1"></a><span class="fu">library</span>(bayesdir)</span>
+<span id="cb2-19"><a href="index.html#cb2-19" tabindex="-1"></a></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="index.html#cb3-1" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">"~/repos/bayesdir/"</span>) </span>
 <span id="cb3-2"><a href="index.html#cb3-2" tabindex="-1"></a><span class="do">## 1. Delete the auto-generated _main.Rmd file</span></span>
 <span id="cb3-3"><a href="index.html#cb3-3" tabindex="-1"></a><span class="fu">unlink</span>(<span class="st">"_main.Rmd"</span>)</span>

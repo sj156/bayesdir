@@ -3,219 +3,145 @@
 ## The main sampler
 
 The main Gibbs sampler is called `run_predresamp_vmf()`. 
-```{r, send_to = 'R/samp.R'}
-#' Run a single martingale posterior chain (no preconditioner).
-#' @param c0 initial natural parameter vector(use MLE)
-#' @param N number of observed data points
-#' @param M number of iteration 
-#' @return A list with components:
-#'   \item{c_final}{final natural parameter vector after possible correction}
-#'   \item{mu_final}{mean direction (angle in radians if p=2)}
-#'   \item{kappa_final}{concentration parameter}
-#'   \item{x_chain}{all new x generated}
-#'   \item{c_chain}{all new c generated}
-#'@export
-run_single_martingale <- function(c0, N, M = 20,save_path = FALSE) {
-                                  
-  p <- length(c0)
-  c_curr <- c0
-  V_mat <- matrix(0, p, p)          # accumulated un‑preconditioned score outer products
-  total_w <- 0
-
-  if (save_path) {
-    x_chain <- matrix(0, p, M)
-    c_chain <- matrix(0, p, M)
-  }
-  
-  
-  
-  # main loop
-  w_cur <- compute_weights(N,M)$W_nm
-  for (t in 1:M) {
-      x_new <- rstiefel::rmf.vector(c_curr)
-      s <- score_fn(c_curr, x_new, p)
-      wt <- 1 / (t + N-1)
-      total_w <- total_w + wt^2
-      V_mat <- V_mat + wt^2 * get_FIM_vmf(c_curr,p)
-      c_curr <- c_curr + wt * s
-      
-      if (save_path) {
-      x_chain[, t] <- x_new
-      c_chain[, t] <- c_curr
-    }
-      
-  }
-  
-  # Variance correction for first m step
-  safe_sym_inverse <- function(M, tol = 1e-10) {
-    eig <- eigen((M + t(M)) / 2, symmetric = TRUE)
-    vals_inv <- 1 / pmax(eig$values, tol)
-    eig$vectors %*% diag(vals_inv) %*% t(eig$vectors)
-  }
-  
-  delta <- c_curr - c0
-  A <- total_w * safe_sym_inverse(V_mat, tol = 1e-10)
-  c_curr <- c0 + A %*% delta
- 
-  # ---- Convert to polar coordinates (mu, kappa) for p=2----
-  kappa_final <- sqrt(sum(c_curr^2))
-  if (p == 2) {
-    mu_final <- atan2(c_curr[2], c_curr[1])
-    if (mu_final < 0) mu_final <- mu_final + 2 * pi
-  } else {
-    mu_final <-(1/kappa_final) * c_curr
-  }
-  
-  res <- list(
-    c_final     = c_curr,
-    mu_final    = mu_final,
-    kappa_final = kappa_final
-  )
-  if (save_path) {
-    res$x_chain <- x_chain
-    res$c_chain <- c_chain
-  }
-  
-  res
-}
-```
-
-
-
-```{r,send_to = 'R/samp.R'}
-#' run B chains for empirical density
-#' @param X data dim = c(p,n)
-#' @param B expected sample size
-#' @param M number of iteration
-#' @param n_cores number of cores used in mclapply
-#' @param save_chain whether to save the entire chain.
+```{r,send_to='R/samp.R'}
+#' Simulate Raw Score Path (Step 1 of Algorithm 1)
+#' @param c0 Initial estimator (MLE)
+#' @param n Initial sample size
+#' @param M Depth (iterations)
+#' @param save_raw Whether to save the trajectory of c_n,m
+#' @return A list containing the raw difference D, quadratic variation Q, and optional path
 #' @export
-run_predresamp_vmf <- function(X,B = 5000, M = 50, n_cores = 1,return_chains = FALSE){
-  
-  n  <- ncol(X)
-  p  <- nrow(X)
-  c0 <- mle_vmf(X)
-  
-  
-  chains <- parallel::mclapply(1:B, function(b) {
-    run_single_martingale(c0 = c0, N = n, M = M, save_path = return_chains)
-  }, mc.cores = n_cores)
-  
-  c_sam <- sapply(chains, `[[`, "c_final")
-  kappa_sam <-sapply(chains,`[[`, "kappa_final")
-  mu_sam <-sapply(chains,`[[`, "mu_final")
-  
-  sample_list <- list(
-    c_sam     = c_sam,
-    mu_sam    = mu_sam,
-    kappa_sam = kappa_sam
-  )
-
-  out <- list(sample = sample_list)
-  if (return_chains) {
-    out$chain <- chains
-  }
-  
-  out
-}
-```
-
-## Hybrid Method and related code
-```{r, send_to = 'R/samp.R'}
-#' Run the early path for a single chain (Step 1 of Hybrid Method)
-#' @param c0 initial natural parameter (MLE)
-#' @param n observed sample size
-#' @param M predictive steps
-#' @return A list containing displacement D and quadratic variation Q
-#' @export
-run_early_path <- function(c0, n, M) {
+simulate_raw_path <- function(c0, n, M, save_raw = FALSE) {
   p <- length(c0)
   c_curr <- c0
   Q_mat <- matrix(0, p, p)
   
-  for (t in 1:M) {
-    gamma_nt <- 1 / (n + t)
-    # Sample from predictive distribution
-    x_new <- rstiefel::rmf.vector(c_curr)
-    # Compute score
-    s <- score_fn(c_curr, x_new, p)
-    # Accumulate quadratic variation
-    Q_mat <- Q_mat + (gamma_nt^2) * (s %*% t(s))
-    # Update parameter
-    c_curr <- c_curr + gamma_nt * s
+  if (save_raw) {
+    c_chain <- matrix(0, p, M + 1)
+    c_chain[, 1] <- c0
   }
   
-  list(
-    D_nm = c_curr - c0,
-    Q_nm = Q_mat
+  for (m in 1:M) {
+    gamma_m <- 1 / (n + m)
+    
+    # 1. Draw X_new ~ vMF(c_curr)
+    x_new <- rstiefel::rmf.vector(c_curr)
+    
+    # 2. Compute score s
+    s <- score_fn(c_curr, x_new, p)
+    
+    # 3. Accumulate quadratic variation Q
+    Q_mat <- Q_mat + (gamma_m^2) * (s %*% t(s))
+    
+    # 4. Raw score update
+    c_curr <- c_curr + gamma_m * s
+    
+    if (save_raw) {
+      c_chain[, m + 1] <- c_curr
+    }
+  }
+  
+  res <- list(
+    D_raw = c_curr - c0, # Raw difference (c_n,M - c_n,0)
+    Q_nM  = Q_mat,
+    c_final_raw = c_curr
   )
+  
+  if (save_raw) res$c_chain <- c_chain
+  return(res)
 }
 
-#' Run Hybrid Predictive Resampling for vMF
-#' @param X data matrix (p x n)
-#' @param B number of independent chains
-#' @param M number of early predictive steps
-#' @param n_cores number of cores for parallel processing
+#' Score-Only Martingale Posterior Sampler for vMF
+#' @param X Data matrix (p x n)
+#' @param B Number of chains
+#' @param M Depth M
+#' @param type "RS-PC" or "HRS-PC"
+#' @param cal "pooled" or "pathwise"
+#' @param n_cores Number of cores
+#' @param save_raw Whether to return the raw score paths
 #' @export
-run_hybrid_vmf <- function(X, B = 5000, M = 50, n_cores = 1) {
+run_predresamp_vmf <- function(X, B = 5000, M = 50, 
+                            type = c("HRS-PC", "RS-PC"), 
+                            cal = c("pooled", "pathwise"), 
+                            n_cores = 1, 
+                            save_raw = FALSE) {
+  type <- match.arg(type)
+  cal  <- match.arg(cal)
   n <- ncol(X)
   p <- nrow(X)
   
-  # 0. Initial Estimate (MLE)
-  c0 <- mle_vmf(X) 
-  weights <- compute_weights(n, M)
+  # --- Step 0: Global Setup ---
+  c0 <- mle_vmf(X)
+  weights <- compute_weights(n, M) # Should return w_nM and r_nM
+  w_nM <- weights$W_nm
+  r_nM <- weights$R_nm
   
-  # 1. Run B chains to get Early Path data (Parallelized)
-  early_results <- parallel::mclapply(1:B, function(b) {
-    run_early_path(c0, n, M)
+  # --- Step 1: Simulate Raw Score Paths (Parallel) ---
+  raw_results <- parallel::mclapply(1:B, function(b) {
+    simulate_raw_path(c0, n, M, save_raw = save_raw)
   }, mc.cores = n_cores)
   
-  # Extract Ds and Qs
-  D_list <- lapply(early_results, `[[`, "D_nm")
-  Q_list <- lapply(early_results, `[[`, "Q_nm")
-  
-  # 2. Pooling (Section 1 & 5 of methodology)
-  bar_Q_nm <- Reduce("+", Q_list) / B
-  hat_I_nm <- bar_Q_nm / weights$W_nm
-  
-  # Inversion helper with stabilization
-  safe_inv <- function(Mat) {
-    eig <- eigen((Mat + t(Mat)) / 2)
-    vals_inv <- 1 / pmax(eig$values, 1e-10)
-    eig$vectors %*% diag(vals_inv) %*% t(eig$vectors)
+  # --- Step 2: Construct Calibration Estimator ---
+  if (cal == "pooled") {
+    Q_list <- lapply(raw_results, `[[`, "Q_nM")
+    bar_Q <- Reduce("+", Q_list) / B
+    I_pool <- bar_Q / w_nM
   }
-  hat_I_inv <- safe_inv(hat_I_nm)
   
-  # 3. Tail Generation and Post-hoc Correction (Section 8)
-  # Tail variance: R_nm * hat_I_nm
-  tail_cov <- weights$R_nm * hat_I_nm
-  # Pre-calculate matrix square root for tail sampling: Z ~ N(0, tail_cov)
-  tail_eig <- eigen(tail_cov)
-  tail_sqrt <- tail_eig$vectors %*% diag(sqrt(pmax(tail_eig$values, 0))) %*% t(tail_eig$vectors)
+  # --- Step 3: Return Posterior Draws ---
+  # Define Post-correction helper C_epsilon
+  correct_fn <- function(diff_vec, I_mat) {
+    c0 + safe_sym_inverse(I_mat) %*% diff_vec
+  }
   
-  c_final_samples <- sapply(1:B, function(b) {
-    # Generate Gaussian Tail Z
-    Z_nm <- tail_sqrt %*% rnorm(p)
-    # Apply Correction: c_hyb = c0 + I_inv * (D + Z)
-    c_hyb <- c0 + hat_I_inv %*% (D_list[[b]] + Z_nm)
-    return(c_hyb)
+  posterior_samples <- sapply(1:B, function(b) {
+    # Get I estimator for this chain
+    I_b <- if (cal == "pathwise") raw_results[[b]]$Q_nM / w_nM else I_pool
+    
+    D_b <- raw_results[[b]]$D_raw
+    
+    if (type == "RS-PC") {
+      # Standard correction: c_out = C(c_nM)
+      c_out <- correct_fn(D_b, I_b)
+    } else {
+      # Hybrid correction: c_out = C(c_nM + Z)
+      # Draw Gaussian Tail Z ~ N(0, r_nM * I_b)
+      tail_cov <- r_nM * I_b
+      # Matrix sqrt for sampling
+      e <- eigen(tail_cov)
+      Z_b <- (e$vectors %*% diag(sqrt(pmax(e$values, 0)), p) %*% t(e$vectors)) %*% rnorm(p)
+      c_out <- correct_fn(D_b + Z_b, I_b)
+    }
+    return(c_out)
   })
   
-  # 4. Transform to Polar for output
-  kappa_sam <- apply(c_final_samples, 2, function(v) sqrt(sum(v^2)))
+  # Transform to Polar for consistency with your previous code
+  kappa_sam <- apply(posterior_samples, 2, function(v) sqrt(sum(v^2)))
   if (p == 2) {
-    # Convert to angles if dimension is 2
-    mu_sam <- apply(c_final_samples, 2, function(v) atan2(v[2], v[1]))
-  }else{ mu_sam <- sweep(c_final_samples, 2, kappa_sam, "/")}
+    mu_sam <- apply(posterior_samples, 2, function(v) {
+      res <- atan2(v[2], v[1])
+      if (res < 0) res <- res + 2 * pi
+      return(res)
+    })
+  } else {
+    mu_sam <- sweep(posterior_samples, 2, kappa_sam, "/")
+  }
   
-  list(
+  out <- list(
     samples = list(
-      c_sam = c_final_samples,
+      c_sam = posterior_samples,
       mu_sam = mu_sam,
       kappa_sam = kappa_sam
     ),
-    info_matrix = hat_I_nm
+    setup = list(type = type, cal = cal, I_pool = if(cal=="pooled") I_pool else NULL)
   )
+  
+  # If requested, save the raw paths from Step 1
+  if (save_raw) {
+    out$raw_chains <- lapply(raw_results, `[[`, "c_chain")
+  }
+  
+  return(out)
 }
 ```
 
