@@ -29,14 +29,11 @@ devtools::install_github("sj156/bayesdir", subdir = "bayesdir", dependencies = T
 library(bayesdir)
 
 # Simulate directions on the unit circle
-x <- r_unif_sphere(50, p = 2, seed = 1)
 
 # Fit a placeholder directional model
-fit <- fit_bayesdir(x)
-fit
 
-# Draw simple posterior resamples
-post <- posterior_resample(fit, n_draws = 200, seed = 2)
+# MPS Draw
+post <- 
 summary(post)
 
 # Basic plots
