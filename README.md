@@ -6,9 +6,6 @@ analysis.
 The long-term goal is to support predictive resampling and martingale posterior
 methods for circular and spherical models.
 
-> **Status:** very early development. Current functions are mostly placeholders,
-> and the API may change.
-
 ## Installation
 
 The package is not on CRAN. Install the development version from GitHub with:
@@ -27,29 +24,35 @@ devtools::install_github("sj156/bayesdir", subdir = "bayesdir", dependencies = T
 
 ```r
 library(bayesdir)
+library(parallel)
 
-# Simulate directions on the unit circle
+#Generate synthetic data.
+n <- 100
+mu_true <- 2
+kappa_true <- 4
+nn_cores <- max(detectCores()-1,1)
 
-# Fit a placeholder directional model
+# Simulate directions on the unit circle for p = 2.
+x2 <- generate_vmf_data(n,mu_true, kappa_true)$X
 
-# MPS Draw
-post <- 
-summary(post)
+# Draw simple posterior resamples
+res_mart <- run_predresamp_vmf(x2,B=500,M=100,n_cores = nn_cores) ## Most effective one. (Hybrid with pooling)
+summary(res_mart$samples$kappa_sam)
 
 # Basic plots
-plot(fit)
-plot(post)
+plot(density(kappa_sam))
 ```
+If one would like to show the trace plot for each martingale, please refer 5simulation.Rmd.
 
 ## Current features
 
 At this stage, `bayesdir` includes simple placeholder tools for:
-
 - working with unit-vector directional data;
-- converting circular angles to Cartesian directions;
-- simulating uniform directions;
+- simulating directions from von-mises fisher distribution for both circular angles and cartesian directions;
 - fitting a basic placeholder directional model;
-- simple posterior and predictive resampling.
+- give a trace plot for each martingale.
+
+For more examples, simulation and real data cases, one may see from 5simulation.Rmd and 6realdata_oscar.Rmd.
 
 ## Development
 
