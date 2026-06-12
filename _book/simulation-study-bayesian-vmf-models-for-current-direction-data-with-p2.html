@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="6 Simulation Study: Bayesian vMF models for current direction Data with p=2 | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-05-29">
+<meta name="date" content="2026-06-12">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -195,14 +195,21 @@ Given current values <span class="math inline">\((\mu,\kappa)\)</span>,</p>
 </h2>
 <p>Though <span class="math inline">\(\texttt{bayesdir::<a href="predictive-resampler.html#run_predresamp_vmf">run_predresamp_vmf</a>()}\)</span> in <span class="math inline">\(\texttt{bayesdir()}\)</span></p>
 <p>Visualize Result after fitting data,</p>
-<p>So to draw similar graphes with the paper, follow the comment below carefully</p>
+<p>So to draw similar graphes with the paper, follow the comment below carefully.</p>
 </div>
 <div id="comparison-between-mcmc-and-mps-method." class="section level2 hasAnchor" number="6.4">
 <h2>
 <span class="header-section-number">6.4</span> Comparison between MCMC and MPS Method.<a href="simulation-study-bayesian-vmf-models-for-current-direction-data-with-p2.html#comparison-between-mcmc-and-mps-method." class="anchor-section" aria-label="Anchor link to header"></a>
 </h2>
-<p>As usual, here first give out the function.</p>
-<p>As an simple example,</p>
+<p>Below function gives a comparision between 3 method, MCMC, hybrid MPS and basic MPS. For some parameters:</p>
+<ul>
+<li><p>B: number of samples ( number of martingales)</p></li>
+<li><p>M: length of each martingale. ( for hybrid method, use M/10)</p></li>
+<li><p>n_sim: number of simulations</p></li>
+<li><p>n: number of observations</p></li>
+<li><p>prior: prior parameter</p></li>
+</ul>
+<p>A Quick Example,</p>
 <p>As for code in the paper,</p>
 
 </div>

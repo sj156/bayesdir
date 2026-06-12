@@ -75,11 +75,31 @@ run_predresamp_vmf <- function(X, B = 5000, M = 50,
   weights <- compute_weights(n, M) # Should return w_nM and r_nM
   w_nM <- weights$W_nm
   r_nM <- weights$R_nm
-  
+  sysname <- Sys.info()[["sysname"]]
   # --- Step 1: Simulate Raw Score Paths (Parallel) ---
-  raw_results <- parallel::mclapply(1:B, function(b) {
-    simulate_raw_path(c0, n, M, save_raw = save_raw)
-  }, mc.cores = n_cores)
+  if (n_cores > 1 && sysname == "Windows") {
+    # Windows: explicit PSOCK cluster
+    cl <- parallel::makeCluster(n_cores)
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+    # Export required objects to workers
+    parallel::clusterExport(cl, 
+      varlist = c("simulate_raw_path", "c0", "n", "M", "save_raw"),
+      envir = environment()
+    )
+    raw_results <- parallel::parLapply(cl, 1:B, function(b) {
+      simulate_raw_path(c0, n, M, save_raw = save_raw)
+    })
+  } else if (n_cores > 1) {
+    # Unix-like: fork-based mclapply
+    raw_results <- parallel::mclapply(1:B, function(b) {
+      simulate_raw_path(c0, n, M, save_raw = save_raw)
+    }, mc.cores = n_cores)
+  } else {
+    # Sequential fallback for n_cores == 1 (any OS)
+    raw_results <- lapply(1:B, function(b) {
+      simulate_raw_path(c0, n, M, save_raw = save_raw)
+    })
+  }
   
   # --- Step 2: Construct Calibration Estimator ---
   if (cal == "pooled") {
