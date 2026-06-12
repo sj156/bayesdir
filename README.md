@@ -50,10 +50,10 @@ If one would like to show the trace plot for each martingale, please refer `5sim
 
 ## Current features
 
-At this stage, `bayesdir` includes simple placeholder tools for:
+At this stage, `bayesdir` includes tools for:
 - simulating directions from von-mises fisher distribution for both circular angles and cartesian directions;
 - compute MLE for von-mises fisher distribution;
-- fitting a basic placeholder directional model;
+- fitting a basic directional model with several options provided (`c("HRS-PC", "RS-PC"), c("pooled", "pathwise")`);
 - give a trace plot for each martingale.
 
 For more examples, simulation and real data cases, one may see from `5simulation.Rmd` and `6realdata_oscar.Rmd`. In simulation part, we provide traditional MCMC method for comparision and also several examples. As a reminder, please `library(circglmbayes)` before run this `fit_mcmc_vmf()`.
