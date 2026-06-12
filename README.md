@@ -26,14 +26,18 @@ devtools::install_github("sj156/bayesdir", subdir = "bayesdir", dependencies = T
 library(bayesdir)
 library(parallel)
 
-#Generate synthetic data.
+#Generate synthetic data(p = 2).
 n <- 100
 mu_true <- 2
 kappa_true <- 4
 nn_cores <- max(detectCores()-1,1)
+# if p != 2, try this ::  c_true <- c(1,1,1)
+
 
 # Simulate directions on the unit circle for p = 2.
 x2 <- generate_vmf_data(n,mu_true, kappa_true)$X
+#if p != 2, try this ::  x3 <-  replicate(n,rstiefel::rmf.vector(c_true))[,1,]
+
 
 # Draw simple posterior resamples
 res_mart <- run_predresamp_vmf(x2,B=500,M=100,n_cores = nn_cores) ## Most effective one. (Hybrid with pooling)
@@ -42,7 +46,7 @@ summary(res_mart$samples$kappa_sam)
 # Basic plots
 plot(density(kappa_sam))
 ```
-If one would like to show the trace plot for each martingale, please refer 5simulation.Rmd.
+If one would like to show the trace plot for each martingale, please refer `5simulation.Rmd`, where we provide some examples using function `plot_trace_sideways_density()`. 
 
 ## Current features
 
@@ -52,7 +56,7 @@ At this stage, `bayesdir` includes simple placeholder tools for:
 - fitting a basic placeholder directional model;
 - give a trace plot for each martingale.
 
-For more examples, simulation and real data cases, one may see from 5simulation.Rmd and 6realdata_oscar.Rmd.
+For more examples, simulation and real data cases, one may see from `5simulation.Rmd` and `6realdata_oscar.Rmd`. In simulation part, we provide traditional MCMC method for comparision and also several examples. 
 
 ## Development
 
