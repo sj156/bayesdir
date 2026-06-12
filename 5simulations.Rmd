@@ -12,7 +12,7 @@ library(RColorBrewer)
 library(rstiefel) 
 library(circular) ## for the coordinates in polar system 
 library(circglmbayes) ## for sampling kappa through mcmc method. 
-library(parallel)
+library(parallel) 
 library(coda) ## for effienct sample size
 
 set.seed(20260509)
@@ -47,10 +47,10 @@ For the von Mises distribution on $[0,2\pi)$, $f(\theta\mid\mu,\kappa) = \frac{1
 We sample from the posterior using a two‑step Gibbs sampler.\
 Given current values $(\mu,\kappa)$,
 
--   Draw $\mu\mid\kappa,\theta$ from a von Mises distribution with mean direction $\bar\theta_n$ and concentration $\kappa R_n$.\
+- Draw $\mu\mid\kappa,\theta$ from a von Mises distribution with mean direction $\bar\theta_n$ and concentration $\kappa R_n$.\
 
--   Draw $\kappa\mid\mu,\theta$ from the full conditional $$    \pi(\kappa\mid\mu,\theta) \propto I_0(\kappa)^{-\eta}\exp\{-\eta\beta_0\kappa\},
-      $$ where $\eta = c+n$ and $\beta_0 = -\frac{R_n}{\eta}\cos(\mu-\bar\theta_n)$.
+- Draw $\kappa\mid\mu,\theta$ from the full conditional $$    \pi(\kappa\mid\mu,\theta) \propto I_0(\kappa)^{-\eta}\exp\{-\eta\beta_0\kappa\},
+    $$ where $\eta = c+n$ and $\beta_0 = -\frac{R_n}{\eta}\cos(\mu-\bar\theta_n)$.
 
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration. Also, $\texttt{theta}$ as an vector with each scalar $\theta_i\in [0, 2\pi]$ and dimension n.
 
@@ -142,13 +142,14 @@ plot(mu_den,main = "Posterior density of mu", xlab = "mu",
 abline(v = mu_true,lty=4,col = "red")
 ```
 
-So to draw similar graphes with the paper, follow the comment below carefully
+So to draw similar graphes with the paper, follow the comment below carefully.
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
 
 set.seed(2026) #for n=100,500
 
 #Settings
+
 nn_cores <- max(detectCores()-1,1)
 mu_true <- 2
 kappa_true <- 4
@@ -162,28 +163,29 @@ kappa_mcmc_den <- density(kappa_MCMC)
 ref_fun <- approxfun(kappa_mcmc_den$x, kappa_mcmc_den$y, yleft = 0, yright = 0)
 
 #MPS
-cor_res <- run_predresamp_vmf(data$X, B = 1000, M = 100, type = "HRS-PC-MPS", n_cores = nn_cores, save_raw = TRUE) # 100 for HRS 1000 for RS
+cor_res <- run_predresamp_vmf(data$X, B = 1000, M = 1000, type = "RS-PC", n_cores = nn_cores, save_raw = TRUE) # 100 for HRS 1000 for RS
 
 kappa_paths <- t(sapply(cor_res$raw_chains, function(chain) {
-  sqrt(colSums(chain$c_chain^2))}))
+  sqrt(colSums(chain^2))}))
 
 c0 <- bayesdir::mle_vmf(data$X)   
 kappa0 <- sqrt(sum(c0^2))
-kappa_paths_with_init <- cbind(kappa0, kappa_paths)
-kappa_last <- kappa_paths_with_init[, ncol(kappa_paths_with_init)]
+
+kappa_last <- kappa_paths[, ncol(kappa_paths)]
 
 #Draw graph, Finally!
+
 layout(matrix(c(1, 2, 3, 3), 2, 2, byrow = TRUE), 
        widths = c(2.4, 1), heights = c(0.9, 0.1))
 
 par(mar = c(3.5, 4, 1.5, 6))
 
 plot_trace_sideways_density(
-  paths          = kappa_paths_with_init,
+  paths          = kappa_paths,
   samples        = kappa_last,          
   iter           = 1:1001, #1:1001 for basic MPS, 1:101 for Hybrid
-  ref_value      = kappa_true, 
-  main = "Raw Sample Path",
+  ref_value      = NULL, 
+  main = "Raw Score Sample Path",
   ylab = "kappa"
 )
 
@@ -203,11 +205,12 @@ par(xpd = FALSE)
 par(mar = c(4, 1, 1.5, 2)) 
 plot_trace_sideways_density(
   paths = NULL,           
-  samples = cor_res$sample$kappa_sam,
+  samples = cor_res$samples$kappa_sam,
+  density_fill   = rgb(0.40, 0.55, 0.70), # Subtle slate fill
   ref_density_fun = ref_fun,
   ref_density_col = "red",  
   ref_value      = kappa_true,
-  main = "Post-hoc Density",
+  main = "PC-MPS Density",
   ylab = ""
 )
 
@@ -223,7 +226,7 @@ legend("top",
        pt.cex = c(1.2, NA, 1.8, NA),
        bty = "n", 
        horiz = TRUE,   
-       cex = 0.9,     
+       cex = 1.0,     
        x.intersp = 0.5,
        text.width = c(0.18,0.12,0.15,0.18)) 
 
@@ -231,7 +234,17 @@ legend("top",
 
 ## Comparison between MCMC and MPS Method.
 
-As usual, here first give out the function.
+Below function gives a comparision between 3 method, MCMC, hybrid MPS and basic MPS. For some parameters:
+
+- B: number of samples ( number of martingales)
+
+- M: length of each martingale. ( for hybrid method, use M/10)
+
+- n_sim: number of simulations
+
+- n: number of observations
+
+- prior: prior parameter
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
 sim_compare_vmf  <- function(n, n_sim = 5000,
@@ -326,43 +339,30 @@ sim_compare_vmf  <- function(n, n_sim = 5000,
 }
 ```
 
-As an simple example,
+A Quick Example,
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
 getwd()
-setwd("~/") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
+setwd(".") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
 nn_cores <- max(detectCores()-1,1)
-res <- sim_compare_vmf(n=30, n_sim= 100,B=50,M=100,n_cores = nn_cores)
+res <- sim_compare_vmf(n=100,n_sim=5,B=50,M=100,n_cores = nn_cores)
 ```
 
 As for code in the paper,
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
 getwd()
-setwd("~/") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
+setwd(".") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
 nn_cores <- max(detectCores()-1,1)
-res500 <- sim_compare_vmf(n=500,n_sim=500,B=500,M=1000,n_cores = nn_cores)
+res500 <- sim_compare_vmf(n=500,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
 save(res500, file = "vmf_simulation_results.RData")
 
-res100 <- sim_compare_vmf(n=100,n_sim=500,B=500,M=1000,n_cores = nn_cores)
-save(res500,res100, file = "vmf_simulation_results.RData")
+res200 <- sim_compare_vmf(n=200,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res500,res200, file = "vmf_simulation_results.RData")
 
-res10 <- sim_compare_vmf(n=10,n_sim=500,B=500,M=1000,n_cores = nn_cores)
-save(res500,res100,res10, file = "vmf_simulation_results.RData")
-```
+res100 <- sim_compare_vmf(n=100,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res500,res200,,res100, file = "vmf_simulation_results.RData")
 
-more simulated datasets 
-
-```{r,eval=FALSE,include=FALSE,purl=FALSE}
-getwd()
-setwd("~/") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
-nn_cores <- max(detectCores()-1,1)
-res500 <- sim_compare_vmf(n=500,n_sim=5000,B=500,M=1000,n_cores = nn_cores)
-save(res500, file = "vmf_simulation_results.RData")
-
-res100 <- sim_compare_vmf(n=100,n_sim=5000,B=500,M=1000,n_cores = nn_cores)
-save(res500,res100, file = "vmf_simulation_results.RData")
-
-res10 <- sim_compare_vmf(n=10,n_sim=5000,B=500,M=1000,n_cores = nn_cores)
-save(res500,res100,res10, file = "vmf_simulation_results.RData")
+res10 <- sim_compare_vmf(n=10,n_sim=5000,B=5000,M=1000,n_cores = nn_cores)
+save(res500,res200,res100,res10, file = "vmf_simulation_results.RData")
 ```
