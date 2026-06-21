@@ -145,91 +145,24 @@ abline(v = mu_true,lty=4,col = "red")
 
 So to draw similar graphes with the paper, follow the comment below carefully.
 
-```{r,eval=FALSE,include=FALSE,purl=FALSE}
+```{r,eval=FALSE,purl=FALSE}
 
-set.seed(2026) #for n=100,500
+set.seed(2026) 
 
 #Settings
 
 nn_cores <- max(detectCores()-1,1)
 mu_true <- 2
 kappa_true <- 4
-n <- 500 # use n=10,100,500 
+n <- 500 
 data <- generate_vmf_data(n, mu_true = mu_true, kappa_true = kappa_true)
 
 #MCMC
 res_MCMC <- fit_mcmc_vmf(data$theta,n_iter=6000,burn = 5000)
-kappa_MCMC <- res_MCMC[,2]
-kappa_mcmc_den <- density(kappa_MCMC)
-ref_fun <- approxfun(kappa_mcmc_den$x, kappa_mcmc_den$y, yleft = 0, yright = 0)
-
 #MPS
-cor_res <- run_predresamp_vmf(data$X, B = 1000, M = 100, type = "HRS-PC", n_cores = nn_cores, save_raw = TRUE) # 100 for HRS 1000 for RS
+cor_res <- run_predresamp_vmf(data$X, B = 1000, M = 100, type = "HRS-PC", n_cores = nn_cores, save_raw = TRUE) 
 
-kappa_paths <- t(sapply(cor_res$raw_chains, function(chain) {
-  sqrt(colSums(chain^2))}))
-
-c0 <- bayesdir::mle_vmf(data$X)   
-kappa0 <- sqrt(sum(c0^2))
-
-kappa_last <- kappa_paths[, ncol(kappa_paths)]
-
-#Draw graph, Finally!
-
-layout(matrix(c(1, 2, 3, 3), 2, 2, byrow = TRUE), 
-       widths = c(2.4, 1), heights = c(0.9, 0.1))
-
-par(mar = c(3.5, 4, 1.5, 6))
-
-plot_trace_sideways_density(
-  paths          = kappa_paths,
-  samples        = kappa_last,          
-  iter           = 1:1001, #1:1001 for basic MPS, 1:101 for Hybrid
-  ref_value      = NULL, 
-  main = "Raw Score Sample Path",
-  ylab = "kappa"
-)
-
-par(xpd = NA)
-usr <- par("usr")
-arrow_x0 <- usr[2] + (usr[2] - usr[1]) * 0.08
-arrow_x1 <- usr[2] + (usr[2] - usr[1]) * 0.25
-arrow_y  <- mean(usr[3:4])
-
-arrows(x0 = arrow_x0, y0 = arrow_y, 
-       x1 = arrow_x1, y1 = arrow_y, 
-       col = "gray40", lwd = 1.8, length = 0.08)
-
-
-par(xpd = FALSE)
-
-par(mar = c(4, 1, 1.5, 2)) 
-plot_trace_sideways_density(
-  paths = NULL,           
-  samples = cor_res$samples$kappa_sam,
-  density_fill   = rgb(0.40, 0.55, 0.70), # Subtle slate fill
-  ref_density_fun = ref_fun,
-  ref_density_col = "red",  
-  ref_value      = kappa_true,
-  main = "PC-MPS Density",
-  ylab = ""
-)
-
-par(mar = c(0, 0, 0, 0)) 
-plot.new() 
-
-legend("top", 
-       legend = c("Initial estimator", "True value", "MPS density", "MCMC benchmark"),
-       col = c("red", "red", rgb(0.20, 0.35, 0.65), "red"),
-       pch = c(19, NA, 15, NA), 
-       lty = c(NA, 2, NA, 1),
-       lwd = c(NA, 1.5, NA, 2),
-       pt.cex = c(1.2, NA, 1.8, NA),
-       bty = "n", 
-       horiz = TRUE,   
-       cex = 1.0,     
-       x.intersp = 0.5,
-       text.width = c(0.18,0.12,0.15,0.18)) 
+plot_vmf_diagnostics(mps_res = cor_res, bayes_res = res_MCMC, kappa_true, n, data$X)
 
 
 ```
