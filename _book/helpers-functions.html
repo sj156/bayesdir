@@ -12,7 +12,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="3 Helpers functions | Creating the bayesdir R package">
 <meta name="author" content="Sheng Jiang">
-<meta name="date" content="2026-06-12">
+<meta name="date" content="2026-06-21">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -440,7 +440,129 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb11-128"><a href="helpers-functions.html#cb11-128" tabindex="-1"></a>  </span>
 <span id="cb11-129"><a href="helpers-functions.html#cb11-129" tabindex="-1"></a>  <span class="co"># Vertical separator line between trace and density</span></span>
 <span id="cb11-130"><a href="helpers-functions.html#cb11-130" tabindex="-1"></a>  <span class="fu">segments</span>(x_offset, y_range[<span class="dv">1</span>], x_offset, y_range[<span class="dv">2</span>], <span class="at">col =</span> <span class="st">"gray60"</span>, <span class="at">lty =</span> <span class="dv">3</span>)</span>
-<span id="cb11-131"><a href="helpers-functions.html#cb11-131" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb11-131"><a href="helpers-functions.html#cb11-131" tabindex="-1"></a>}</span>
+<span id="cb11-132"><a href="helpers-functions.html#cb11-132" tabindex="-1"></a></span>
+<span id="cb11-133"><a href="helpers-functions.html#cb11-133" tabindex="-1"></a></span>
+<span id="cb11-134"><a href="helpers-functions.html#cb11-134" tabindex="-1"></a><span class="co">#' Diagnostic plot for vMF MPS and MCMC inference</span></span>
+<span id="cb11-135"><a href="helpers-functions.html#cb11-135" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb11-136"><a href="helpers-functions.html#cb11-136" tabindex="-1"></a><span class="co">#' Produces a three‑panel diagnostic figure for the von Mises–Fisher</span></span>
+<span id="cb11-137"><a href="helpers-functions.html#cb11-137" tabindex="-1"></a><span class="co">#' concentration parameter \eqn{\kappa}:</span></span>
+<span id="cb11-138"><a href="helpers-functions.html#cb11-138" tabindex="-1"></a><span class="co">#' \enumerate{</span></span>
+<span id="cb11-139"><a href="helpers-functions.html#cb11-139" tabindex="-1"></a><span class="co">#'   \item Left panel: raw‑score sample paths (one per MPS chain) over</span></span>
+<span id="cb11-140"><a href="helpers-functions.html#cb11-140" tabindex="-1"></a><span class="co">#'         resampling iterations.</span></span>
+<span id="cb11-141"><a href="helpers-functions.html#cb11-141" tabindex="-1"></a><span class="co">#'   \item Right panel: PC‑MPS density estimate overlaid with the MCMC</span></span>
+<span id="cb11-142"><a href="helpers-functions.html#cb11-142" tabindex="-1"></a><span class="co">#'         posterior density.</span></span>
+<span id="cb11-143"><a href="helpers-functions.html#cb11-143" tabindex="-1"></a><span class="co">#'   \item Bottom legend: initial estimator, true value, MPS density, and</span></span>
+<span id="cb11-144"><a href="helpers-functions.html#cb11-144" tabindex="-1"></a><span class="co">#'         MCMC benchmark.</span></span>
+<span id="cb11-145"><a href="helpers-functions.html#cb11-145" tabindex="-1"></a><span class="co">#' }</span></span>
+<span id="cb11-146"><a href="helpers-functions.html#cb11-146" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb11-147"><a href="helpers-functions.html#cb11-147" tabindex="-1"></a><span class="co">#' @param mps_res Output from \code{\link{run_predresamp_vmf}} with</span></span>
+<span id="cb11-148"><a href="helpers-functions.html#cb11-148" tabindex="-1"></a><span class="co">#'   \code{save_raw = TRUE}. Must contain \code{raw_chains} and</span></span>
+<span id="cb11-149"><a href="helpers-functions.html#cb11-149" tabindex="-1"></a><span class="co">#'   \code{samples$kappa_sam}.</span></span>
+<span id="cb11-150"><a href="helpers-functions.html#cb11-150" tabindex="-1"></a><span class="co">#' @param bayes_res A matrix of posterior draws from</span></span>
+<span id="cb11-151"><a href="helpers-functions.html#cb11-151" tabindex="-1"></a><span class="co">#'   \code{\link{fit_mcmc_vmf}} or other method; the second column is assumed to hold</span></span>
+<span id="cb11-152"><a href="helpers-functions.html#cb11-152" tabindex="-1"></a><span class="co">#'   \eqn{\kappa} samples.</span></span>
+<span id="cb11-153"><a href="helpers-functions.html#cb11-153" tabindex="-1"></a><span class="co">#' @param kappa_true True value of the concentration parameter (scalar).</span></span>
+<span id="cb11-154"><a href="helpers-functions.html#cb11-154" tabindex="-1"></a><span class="co">#' @param n Sample size (scalar integer).</span></span>
+<span id="cb11-155"><a href="helpers-functions.html#cb11-155" tabindex="-1"></a><span class="co">#' @param data_X data in cartesian coordinates</span></span>
+<span id="cb11-156"><a href="helpers-functions.html#cb11-156" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb11-157"><a href="helpers-functions.html#cb11-157" tabindex="-1"></a><span class="co">#' @examples</span></span>
+<span id="cb11-158"><a href="helpers-functions.html#cb11-158" tabindex="-1"></a><span class="co">#' \dontrun{</span></span>
+<span id="cb11-159"><a href="helpers-functions.html#cb11-159" tabindex="-1"></a><span class="co">#' # Assumes mps_res, bayes_res, kappa_true, and n already exist</span></span>
+<span id="cb11-160"><a href="helpers-functions.html#cb11-160" tabindex="-1"></a><span class="co">#' <a href="helpers-functions.html#plot_vmf_diagnostics">plot_vmf_diagnostics</a>(mps_res = mps_res,</span></span>
+<span id="cb11-161"><a href="helpers-functions.html#cb11-161" tabindex="-1"></a><span class="co">#'                      bayes_res = bayes_res,</span></span>
+<span id="cb11-162"><a href="helpers-functions.html#cb11-162" tabindex="-1"></a><span class="co">#'                      kappa_true = kappa_true,</span></span>
+<span id="cb11-163"><a href="helpers-functions.html#cb11-163" tabindex="-1"></a><span class="co">#'                      n = n)</span></span>
+<span id="cb11-164"><a href="helpers-functions.html#cb11-164" tabindex="-1"></a><span class="co">#' }</span></span>
+<span id="cb11-165"><a href="helpers-functions.html#cb11-165" tabindex="-1"></a><span class="co">#'</span></span>
+<span id="cb11-166"><a href="helpers-functions.html#cb11-166" tabindex="-1"></a><span class="co">#' @export</span></span>
+<span id="cb11-167"><a href="helpers-functions.html#cb11-167" tabindex="-1"></a><span id="plot_vmf_diagnostics">plot_vmf_diagnostics</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(mps_res,</span>
+<span id="cb11-168"><a href="helpers-functions.html#cb11-168" tabindex="-1"></a>                                 bayes_res,</span>
+<span id="cb11-169"><a href="helpers-functions.html#cb11-169" tabindex="-1"></a>                                 kappa_true,</span>
+<span id="cb11-170"><a href="helpers-functions.html#cb11-170" tabindex="-1"></a>                                 n,</span>
+<span id="cb11-171"><a href="helpers-functions.html#cb11-171" tabindex="-1"></a>                                 data_X) {</span>
+<span id="cb11-172"><a href="helpers-functions.html#cb11-172" tabindex="-1"></a>  <span class="co"># ---------- Prepare data ----------</span></span>
+<span id="cb11-173"><a href="helpers-functions.html#cb11-173" tabindex="-1"></a>  <span class="co"># 1. MCMC reference density</span></span>
+<span id="cb11-174"><a href="helpers-functions.html#cb11-174" tabindex="-1"></a>  kappa_mcmc <span class="ot">&lt;-</span> bayes_res[, <span class="dv">2</span>]</span>
+<span id="cb11-175"><a href="helpers-functions.html#cb11-175" tabindex="-1"></a>  kappa_mcmc_den <span class="ot">&lt;-</span> <span class="fu">density</span>(kappa_mcmc)</span>
+<span id="cb11-176"><a href="helpers-functions.html#cb11-176" tabindex="-1"></a>  ref_fun <span class="ot">&lt;-</span> <span class="fu">approxfun</span>(kappa_mcmc_den<span class="sc">$</span>x, kappa_mcmc_den<span class="sc">$</span>y, <span class="at">yleft =</span> <span class="dv">0</span>, <span class="at">yright =</span> <span class="dv">0</span>)</span>
+<span id="cb11-177"><a href="helpers-functions.html#cb11-177" tabindex="-1"></a>  </span>
+<span id="cb11-178"><a href="helpers-functions.html#cb11-178" tabindex="-1"></a>  <span class="co"># 2. MPS paths and terminal samples</span></span>
+<span id="cb11-179"><a href="helpers-functions.html#cb11-179" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(mps_res<span class="sc">$</span>raw_chains)) {</span>
+<span id="cb11-180"><a href="helpers-functions.html#cb11-180" tabindex="-1"></a>    <span class="fu">stop</span>(<span class="st">"'mps_res' does not contain 'raw_chains'. Set save_raw = TRUE in <a href="predictive-resampler.html#run_predresamp_vmf">run_predresamp_vmf</a>()."</span>)</span>
+<span id="cb11-181"><a href="helpers-functions.html#cb11-181" tabindex="-1"></a>  }</span>
+<span id="cb11-182"><a href="helpers-functions.html#cb11-182" tabindex="-1"></a>  kappa_paths <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">sapply</span>(mps_res<span class="sc">$</span>raw_chains, <span class="cf">function</span>(chain) {</span>
+<span id="cb11-183"><a href="helpers-functions.html#cb11-183" tabindex="-1"></a>    <span class="fu">sqrt</span>(<span class="fu">colSums</span>(chain<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb11-184"><a href="helpers-functions.html#cb11-184" tabindex="-1"></a>  }))</span>
+<span id="cb11-185"><a href="helpers-functions.html#cb11-185" tabindex="-1"></a>  kappa_last <span class="ot">&lt;-</span> kappa_paths[, <span class="fu">ncol</span>(kappa_paths)]</span>
+<span id="cb11-186"><a href="helpers-functions.html#cb11-186" tabindex="-1"></a>  iter_seq <span class="ot">&lt;-</span> <span class="fu">seq_len</span>(<span class="fu">ncol</span>(kappa_paths))</span>
+<span id="cb11-187"><a href="helpers-functions.html#cb11-187" tabindex="-1"></a>  </span>
+<span id="cb11-188"><a href="helpers-functions.html#cb11-188" tabindex="-1"></a>  <span class="co"># 3. Initial estimate</span></span>
+<span id="cb11-189"><a href="helpers-functions.html#cb11-189" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(data_X)) {</span>
+<span id="cb11-190"><a href="helpers-functions.html#cb11-190" tabindex="-1"></a>    c0 <span class="ot">&lt;-</span> bayesdir<span class="sc">::</span><a href="helpers-functions.html#mle_vmf">mle_vmf</a>(data_X)</span>
+<span id="cb11-191"><a href="helpers-functions.html#cb11-191" tabindex="-1"></a>    init_kappa <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">sum</span>(c0<span class="sc">^</span><span class="dv">2</span>))</span>
+<span id="cb11-192"><a href="helpers-functions.html#cb11-192" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (<span class="fu">is.null</span>(init_kappa)) {</span>
+<span id="cb11-193"><a href="helpers-functions.html#cb11-193" tabindex="-1"></a>    init_kappa <span class="ot">&lt;-</span> <span class="fu">mean</span>(kappa_mcmc)</span>
+<span id="cb11-194"><a href="helpers-functions.html#cb11-194" tabindex="-1"></a>    <span class="fu">message</span>(<span class="st">"Using MCMC posterior mean as initial estimator: "</span>, <span class="fu">round</span>(init_kappa, <span class="dv">3</span>))</span>
+<span id="cb11-195"><a href="helpers-functions.html#cb11-195" tabindex="-1"></a>  }</span>
+<span id="cb11-196"><a href="helpers-functions.html#cb11-196" tabindex="-1"></a>  </span>
+<span id="cb11-197"><a href="helpers-functions.html#cb11-197" tabindex="-1"></a>  <span class="co"># ---------- Layout ----------</span></span>
+<span id="cb11-198"><a href="helpers-functions.html#cb11-198" tabindex="-1"></a>  <span class="fu">layout</span>(<span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>), <span class="dv">2</span>, <span class="dv">2</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb11-199"><a href="helpers-functions.html#cb11-199" tabindex="-1"></a>         <span class="at">widths =</span> <span class="fu">c</span>(<span class="fl">2.4</span>, <span class="dv">1</span>), <span class="at">heights =</span> <span class="fu">c</span>(<span class="fl">0.9</span>, <span class="fl">0.1</span>))</span>
+<span id="cb11-200"><a href="helpers-functions.html#cb11-200" tabindex="-1"></a>  </span>
+<span id="cb11-201"><a href="helpers-functions.html#cb11-201" tabindex="-1"></a>  <span class="co"># ---------- Left panel: sample paths ----------</span></span>
+<span id="cb11-202"><a href="helpers-functions.html#cb11-202" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">3.5</span>, <span class="dv">4</span>, <span class="fl">1.5</span>, <span class="dv">6</span>))</span>
+<span id="cb11-203"><a href="helpers-functions.html#cb11-203" tabindex="-1"></a>  <a href="helpers-functions.html#plot_trace_sideways_density">plot_trace_sideways_density</a>(</span>
+<span id="cb11-204"><a href="helpers-functions.html#cb11-204" tabindex="-1"></a>    <span class="at">paths     =</span> kappa_paths,</span>
+<span id="cb11-205"><a href="helpers-functions.html#cb11-205" tabindex="-1"></a>    <span class="at">samples   =</span> kappa_last,</span>
+<span id="cb11-206"><a href="helpers-functions.html#cb11-206" tabindex="-1"></a>    <span class="at">iter      =</span> iter_seq,</span>
+<span id="cb11-207"><a href="helpers-functions.html#cb11-207" tabindex="-1"></a>    <span class="at">ref_value =</span> <span class="cn">NULL</span>,</span>
+<span id="cb11-208"><a href="helpers-functions.html#cb11-208" tabindex="-1"></a>    <span class="at">main      =</span> <span class="fu">paste0</span>(<span class="st">"Raw Score Sample Path (n = "</span>, n, <span class="st">")"</span>),</span>
+<span id="cb11-209"><a href="helpers-functions.html#cb11-209" tabindex="-1"></a>    <span class="at">ylab      =</span> <span class="st">"kappa"</span></span>
+<span id="cb11-210"><a href="helpers-functions.html#cb11-210" tabindex="-1"></a>  )</span>
+<span id="cb11-211"><a href="helpers-functions.html#cb11-211" tabindex="-1"></a>  </span>
+<span id="cb11-212"><a href="helpers-functions.html#cb11-212" tabindex="-1"></a>  <span class="co"># Connecting arrow</span></span>
+<span id="cb11-213"><a href="helpers-functions.html#cb11-213" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">xpd =</span> <span class="cn">NA</span>)</span>
+<span id="cb11-214"><a href="helpers-functions.html#cb11-214" tabindex="-1"></a>  usr <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="st">"usr"</span>)</span>
+<span id="cb11-215"><a href="helpers-functions.html#cb11-215" tabindex="-1"></a>  arrow_x0 <span class="ot">&lt;-</span> usr[<span class="dv">2</span>] <span class="sc">+</span> (usr[<span class="dv">2</span>] <span class="sc">-</span> usr[<span class="dv">1</span>]) <span class="sc">*</span> <span class="fl">0.08</span></span>
+<span id="cb11-216"><a href="helpers-functions.html#cb11-216" tabindex="-1"></a>  arrow_x1 <span class="ot">&lt;-</span> usr[<span class="dv">2</span>] <span class="sc">+</span> (usr[<span class="dv">2</span>] <span class="sc">-</span> usr[<span class="dv">1</span>]) <span class="sc">*</span> <span class="fl">0.25</span></span>
+<span id="cb11-217"><a href="helpers-functions.html#cb11-217" tabindex="-1"></a>  arrow_y  <span class="ot">&lt;-</span> <span class="fu">mean</span>(usr[<span class="dv">3</span><span class="sc">:</span><span class="dv">4</span>])</span>
+<span id="cb11-218"><a href="helpers-functions.html#cb11-218" tabindex="-1"></a>  <span class="fu">arrows</span>(<span class="at">x0 =</span> arrow_x0, <span class="at">y0 =</span> arrow_y,</span>
+<span id="cb11-219"><a href="helpers-functions.html#cb11-219" tabindex="-1"></a>         <span class="at">x1 =</span> arrow_x1, <span class="at">y1 =</span> arrow_y,</span>
+<span id="cb11-220"><a href="helpers-functions.html#cb11-220" tabindex="-1"></a>         <span class="at">col =</span> <span class="st">"gray40"</span>, <span class="at">lwd =</span> <span class="fl">1.8</span>, <span class="at">length =</span> <span class="fl">0.08</span>)</span>
+<span id="cb11-221"><a href="helpers-functions.html#cb11-221" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">xpd =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-222"><a href="helpers-functions.html#cb11-222" tabindex="-1"></a>  </span>
+<span id="cb11-223"><a href="helpers-functions.html#cb11-223" tabindex="-1"></a>  <span class="co"># ---------- Right panel: PC‑MPS density vs MCMC ----------</span></span>
+<span id="cb11-224"><a href="helpers-functions.html#cb11-224" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dv">2</span>))</span>
+<span id="cb11-225"><a href="helpers-functions.html#cb11-225" tabindex="-1"></a>  <a href="helpers-functions.html#plot_trace_sideways_density">plot_trace_sideways_density</a>(</span>
+<span id="cb11-226"><a href="helpers-functions.html#cb11-226" tabindex="-1"></a>    <span class="at">paths           =</span> <span class="cn">NULL</span>,</span>
+<span id="cb11-227"><a href="helpers-functions.html#cb11-227" tabindex="-1"></a>    <span class="at">samples         =</span> mps_res<span class="sc">$</span>samples<span class="sc">$</span>kappa_sam,</span>
+<span id="cb11-228"><a href="helpers-functions.html#cb11-228" tabindex="-1"></a>    <span class="at">density_fill    =</span> <span class="fu">rgb</span>(<span class="fl">0.40</span>, <span class="fl">0.55</span>, <span class="fl">0.70</span>),</span>
+<span id="cb11-229"><a href="helpers-functions.html#cb11-229" tabindex="-1"></a>    <span class="at">ref_density_fun =</span> ref_fun,</span>
+<span id="cb11-230"><a href="helpers-functions.html#cb11-230" tabindex="-1"></a>    <span class="at">ref_density_col =</span> <span class="st">"red"</span>,</span>
+<span id="cb11-231"><a href="helpers-functions.html#cb11-231" tabindex="-1"></a>    <span class="at">ref_value       =</span> kappa_true,</span>
+<span id="cb11-232"><a href="helpers-functions.html#cb11-232" tabindex="-1"></a>    <span class="at">main            =</span> <span class="st">"MPS Density"</span>,</span>
+<span id="cb11-233"><a href="helpers-functions.html#cb11-233" tabindex="-1"></a>    <span class="at">ylab            =</span> <span class="st">""</span></span>
+<span id="cb11-234"><a href="helpers-functions.html#cb11-234" tabindex="-1"></a>  )</span>
+<span id="cb11-235"><a href="helpers-functions.html#cb11-235" tabindex="-1"></a>  </span>
+<span id="cb11-236"><a href="helpers-functions.html#cb11-236" tabindex="-1"></a>  <span class="co"># ---------- Bottom legend ----------</span></span>
+<span id="cb11-237"><a href="helpers-functions.html#cb11-237" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
+<span id="cb11-238"><a href="helpers-functions.html#cb11-238" tabindex="-1"></a>  <span class="fu">plot.new</span>()</span>
+<span id="cb11-239"><a href="helpers-functions.html#cb11-239" tabindex="-1"></a>  <span class="fu">legend</span>(<span class="st">"top"</span>,</span>
+<span id="cb11-240"><a href="helpers-functions.html#cb11-240" tabindex="-1"></a>         <span class="at">legend =</span> <span class="fu">c</span>(<span class="st">"Initial estimator"</span>, <span class="st">"True value"</span>, <span class="st">"MPS density"</span>, <span class="st">"MCMC benchmark"</span>),</span>
+<span id="cb11-241"><a href="helpers-functions.html#cb11-241" tabindex="-1"></a>         <span class="at">col    =</span> <span class="fu">c</span>(<span class="st">"red"</span>, <span class="st">"red"</span>, <span class="fu">rgb</span>(<span class="fl">0.20</span>, <span class="fl">0.35</span>, <span class="fl">0.65</span>), <span class="st">"red"</span>),</span>
+<span id="cb11-242"><a href="helpers-functions.html#cb11-242" tabindex="-1"></a>         <span class="at">pch    =</span> <span class="fu">c</span>(<span class="dv">19</span>, <span class="cn">NA</span>, <span class="dv">15</span>, <span class="cn">NA</span>),</span>
+<span id="cb11-243"><a href="helpers-functions.html#cb11-243" tabindex="-1"></a>         <span class="at">lty    =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">2</span>, <span class="cn">NA</span>, <span class="dv">1</span>),</span>
+<span id="cb11-244"><a href="helpers-functions.html#cb11-244" tabindex="-1"></a>         <span class="at">lwd    =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fl">1.5</span>, <span class="cn">NA</span>, <span class="dv">2</span>),</span>
+<span id="cb11-245"><a href="helpers-functions.html#cb11-245" tabindex="-1"></a>         <span class="at">pt.cex =</span> <span class="fu">c</span>(<span class="fl">1.2</span>, <span class="cn">NA</span>, <span class="fl">1.8</span>, <span class="cn">NA</span>),</span>
+<span id="cb11-246"><a href="helpers-functions.html#cb11-246" tabindex="-1"></a>         <span class="at">bty    =</span> <span class="st">"n"</span>,</span>
+<span id="cb11-247"><a href="helpers-functions.html#cb11-247" tabindex="-1"></a>         <span class="at">horiz  =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-248"><a href="helpers-functions.html#cb11-248" tabindex="-1"></a>         <span class="at">cex    =</span> <span class="fl">1.0</span>,</span>
+<span id="cb11-249"><a href="helpers-functions.html#cb11-249" tabindex="-1"></a>         <span class="at">x.intersp =</span> <span class="fl">0.5</span>,</span>
+<span id="cb11-250"><a href="helpers-functions.html#cb11-250" tabindex="-1"></a>         <span class="at">text.width =</span> <span class="fu">c</span>(<span class="fl">0.18</span>, <span class="fl">0.12</span>, <span class="fl">0.15</span>, <span class="fl">0.18</span>))</span>
+<span id="cb11-251"><a href="helpers-functions.html#cb11-251" tabindex="-1"></a>  </span>
+<span id="cb11-252"><a href="helpers-functions.html#cb11-252" tabindex="-1"></a>  <span class="fu">invisible</span>()</span>
+<span id="cb11-253"><a href="helpers-functions.html#cb11-253" tabindex="-1"></a>}</span></code></pre></div>
 
 </div>
 </div>

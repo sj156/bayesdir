@@ -288,6 +288,128 @@ plot_trace_sideways_density <- function(
   # Vertical separator line between trace and density
   segments(x_offset, y_range[1], x_offset, y_range[2], col = "gray60", lty = 3)
 }
+
+
+#' Diagnostic plot for vMF MPS and MCMC inference
+#'
+#' Produces a three‑panel diagnostic figure for the von Mises–Fisher
+#' concentration parameter \eqn{\kappa}:
+#' \enumerate{
+#'   \item Left panel: raw‑score sample paths (one per MPS chain) over
+#'         resampling iterations.
+#'   \item Right panel: PC‑MPS density estimate overlaid with the MCMC
+#'         posterior density.
+#'   \item Bottom legend: initial estimator, true value, MPS density, and
+#'         MCMC benchmark.
+#' }
+#'
+#' @param mps_res Output from \code{\link{run_predresamp_vmf}} with
+#'   \code{save_raw = TRUE}. Must contain \code{raw_chains} and
+#'   \code{samples$kappa_sam}.
+#' @param bayes_res A matrix of posterior draws from
+#'   \code{\link{fit_mcmc_vmf}} or other method; the second column is assumed to hold
+#'   \eqn{\kappa} samples.
+#' @param kappa_true True value of the concentration parameter (scalar).
+#' @param n Sample size (scalar integer).
+#' @param data_X data in cartesian coordinates
+#'
+#' @examples
+#' \dontrun{
+#' # Assumes mps_res, bayes_res, kappa_true, and n already exist
+#' plot_vmf_diagnostics(mps_res = mps_res,
+#'                      bayes_res = bayes_res,
+#'                      kappa_true = kappa_true,
+#'                      n = n)
+#' }
+#'
+#' @export
+plot_vmf_diagnostics <- function(mps_res,
+                                 bayes_res,
+                                 kappa_true,
+                                 n,
+                                 data_X) {
+  # ---------- Prepare data ----------
+  # 1. MCMC reference density
+  kappa_mcmc <- bayes_res[, 2]
+  kappa_mcmc_den <- density(kappa_mcmc)
+  ref_fun <- approxfun(kappa_mcmc_den$x, kappa_mcmc_den$y, yleft = 0, yright = 0)
+  
+  # 2. MPS paths and terminal samples
+  if (is.null(mps_res$raw_chains)) {
+    stop("'mps_res' does not contain 'raw_chains'. Set save_raw = TRUE in run_predresamp_vmf().")
+  }
+  kappa_paths <- t(sapply(mps_res$raw_chains, function(chain) {
+    sqrt(colSums(chain^2))
+  }))
+  kappa_last <- kappa_paths[, ncol(kappa_paths)]
+  iter_seq <- seq_len(ncol(kappa_paths))
+  
+  # 3. Initial estimate
+  if (!is.null(data_X)) {
+    c0 <- bayesdir::mle_vmf(data_X)
+    init_kappa <- sqrt(sum(c0^2))
+  } else if (is.null(init_kappa)) {
+    init_kappa <- mean(kappa_mcmc)
+    message("Using MCMC posterior mean as initial estimator: ", round(init_kappa, 3))
+  }
+  
+  # ---------- Layout ----------
+  layout(matrix(c(1, 2, 3, 3), 2, 2, byrow = TRUE),
+         widths = c(2.4, 1), heights = c(0.9, 0.1))
+  
+  # ---------- Left panel: sample paths ----------
+  par(mar = c(3.5, 4, 1.5, 6))
+  plot_trace_sideways_density(
+    paths     = kappa_paths,
+    samples   = kappa_last,
+    iter      = iter_seq,
+    ref_value = NULL,
+    main      = paste0("Raw Score Sample Path (n = ", n, ")"),
+    ylab      = "kappa"
+  )
+  
+  # Connecting arrow
+  par(xpd = NA)
+  usr <- par("usr")
+  arrow_x0 <- usr[2] + (usr[2] - usr[1]) * 0.08
+  arrow_x1 <- usr[2] + (usr[2] - usr[1]) * 0.25
+  arrow_y  <- mean(usr[3:4])
+  arrows(x0 = arrow_x0, y0 = arrow_y,
+         x1 = arrow_x1, y1 = arrow_y,
+         col = "gray40", lwd = 1.8, length = 0.08)
+  par(xpd = FALSE)
+  
+  # ---------- Right panel: PC‑MPS density vs MCMC ----------
+  par(mar = c(4, 1, 1.5, 2))
+  plot_trace_sideways_density(
+    paths           = NULL,
+    samples         = mps_res$samples$kappa_sam,
+    density_fill    = rgb(0.40, 0.55, 0.70),
+    ref_density_fun = ref_fun,
+    ref_density_col = "red",
+    ref_value       = kappa_true,
+    main            = "MPS Density",
+    ylab            = ""
+  )
+  
+  # ---------- Bottom legend ----------
+  par(mar = c(0, 0, 0, 0))
+  plot.new()
+  legend("top",
+         legend = c("Initial estimator", "True value", "MPS density", "MCMC benchmark"),
+         col    = c("red", "red", rgb(0.20, 0.35, 0.65), "red"),
+         pch    = c(19, NA, 15, NA),
+         lty    = c(NA, 2, NA, 1),
+         lwd    = c(NA, 1.5, NA, 2),
+         pt.cex = c(1.2, NA, 1.8, NA),
+         bty    = "n",
+         horiz  = TRUE,
+         cex    = 1.0,
+         x.intersp = 0.5,
+         text.width = c(0.18, 0.12, 0.15, 0.18))
+  
+  invisible()
+}
 ```
 
 

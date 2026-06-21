@@ -55,6 +55,7 @@ Given current values $(\mu,\kappa)$,
 Here $\mu \in [0,2\pi]$ as an angle. $\kappa \geq0$ as concentration. Also, $\texttt{theta}$ as an vector with each scalar $\theta_i\in [0, 2\pi]$ and dimension n.
 
 ```{r,eval=FALSE,include=FALSE,purl=FALSE}
+#'
 fit_mcmc_vmf <- function(theta, prior = list(c = 0, R0 = 0, mu0 = 0), n_iter = 10000, burn = 5000) {
   n <- length(theta)
   C_n <- prior$R0 * cos(prior$mu0) + sum(cos(theta))
@@ -163,7 +164,7 @@ kappa_mcmc_den <- density(kappa_MCMC)
 ref_fun <- approxfun(kappa_mcmc_den$x, kappa_mcmc_den$y, yleft = 0, yright = 0)
 
 #MPS
-cor_res <- run_predresamp_vmf(data$X, B = 1000, M = 1000, type = "RS-PC", n_cores = nn_cores, save_raw = TRUE) # 100 for HRS 1000 for RS
+cor_res <- run_predresamp_vmf(data$X, B = 1000, M = 100, type = "HRS-PC", n_cores = nn_cores, save_raw = TRUE) # 100 for HRS 1000 for RS
 
 kappa_paths <- t(sapply(cor_res$raw_chains, function(chain) {
   sqrt(colSums(chain^2))}))
@@ -229,6 +230,7 @@ legend("top",
        cex = 1.0,     
        x.intersp = 0.5,
        text.width = c(0.18,0.12,0.15,0.18)) 
+
 
 ```
 
@@ -316,6 +318,15 @@ sim_compare_vmf  <- function(n, n_sim = 5000,
     setTxtProgressBar(pb, i)
 
     # Periodic Backup
+    if (i == 20 & n_sim >= 200) {
+      temp_res <- list(hrs = res_hrs[1:i], rs = res_rspc[1:i], bayes = res_bayes[1:i], iter = i)
+      saveRDS(temp_res, file = file.path(save_dir, paste0("backup_iter_", i, ".rds")))
+      
+      elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "mins"))
+      eta <- (elapsed / i) * (n_sim - i)
+      message(sprintf("\n[Checkpoint %d] ETA: %.1f mins", i, eta))
+    }
+    
     if (i %% save_interval == 0) {
       temp_res <- list(hrs = res_hrs[1:i], rs = res_rspc[1:i], bayes = res_bayes[1:i], iter = i)
       saveRDS(temp_res, file = file.path(save_dir, paste0("backup_iter_", i, ".rds")))
@@ -327,6 +338,7 @@ sim_compare_vmf  <- function(n, n_sim = 5000,
   }
   
   close(pb)
+  unlink(save_dir, recursive = TRUE)
 
 
   final_summary <- rbind(
@@ -345,7 +357,7 @@ A Quick Example,
 getwd()
 setwd(".") ## here set folder to save result, also it will be the place holder to save intermediate result for safety.
 nn_cores <- max(detectCores()-1,1)
-res <- sim_compare_vmf(n=100,n_sim=5,B=50,M=100,n_cores = nn_cores)
+res <- sim_compare_vmf(n=100,n_sim=200,B=50,M=10,n_cores = nn_cores)
 ```
 
 As for code in the paper,
