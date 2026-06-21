@@ -46,7 +46,29 @@ summary(res_mart$samples$kappa_sam)
 # Basic plots
 plot(density(kappa_sam))
 ```
-If one would like to show the trace plot for each martingale, please refer `5simulation.Rmd`, where we provide some examples using function `plot_trace_sideways_density()`. 
+If one would like to show the trace plot for each martingale, please refer `5simulation.Rmd`, where we provide some examples using function `plot_vmf_diagnostics()`. 
+
+```r
+set.seed(2026) 
+
+nn_cores <- max(detectCores()-1,1)
+mu_true <- 2
+kappa_true <- 4
+n <- 500 
+data <- generate_vmf_data(n, mu_true = mu_true, kappa_true = kappa_true)
+
+# MCMC 
+res_MCMC <- fit_mcmc_vmf(data$theta,n_iter=6000,burn = 5000)
+
+# MPS 
+cor_res <- run_predresamp_vmf(data$X, B = 1000, M = 100, type = "HRS-PC", n_cores = nn_cores, save_raw = TRUE) 
+
+plot_vmf_diagnostics(mps_res = cor_res, bayes_res = res_MCMC, kappa_true, n, data$X)
+```
+
+Note `fit_mcmc_vmf()` is in `5.simulation.Rmd`, and you may try different MCMC method by yourself; for the parameter in `run_predresamp_vmf()`, as we want draw each traces, we must turn `save_raw` on.
+
+
 
 ## Current features
 
